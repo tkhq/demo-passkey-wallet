@@ -1,0 +1,20 @@
+<html>
+  {{template "header.tmpl.html" .}}
+<body>
+  {{template "nav.tmpl.html" .}}
+  
+  <div class="container auth-form-container">
+    <form class="auth-form" action="/signup" method="post">
+      <img class="mb-4" src="/static/piggybank-logo.png" alt="" width="72" height="72" style="display: block; margin: auto">
+      <h1 class="h3 mb-3 font-weight-normal">Create your Piggybank account!</h1>
+      <label for="inputUsername" class="sr-only">Username</label>
+      <input type="text" id="inputUsername" name="username" class="form-control" placeholder="Username" required autofocus>
+      <label for="inputPassword" class="sr-only">Password</label>
+      <input type="password" id="inputPassword" name="password" class="form-control" placeholder="New password" required>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Create your account</button>
+      <h5>Already have an account? <a href="/login">Log in</a> instead.</h5>
+    </form>
+  </div>
+
+</body>
+</html>

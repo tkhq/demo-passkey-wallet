@@ -1,0 +1,11 @@
+{
+  "name": "Piggybank",
+  "description": "Sample application",
+  "keywords": [
+    "piggy",
+    "bank",
+    "sample",
+    "example"
+  ],
+  "repository": "https://github.com/r-n-o/piggybank"
+}

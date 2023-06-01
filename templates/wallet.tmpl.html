@@ -1,0 +1,43 @@
+<html>
+  {{template "header.tmpl.html" .}}
+<body>
+  {{template "nav.tmpl.html" .}}
+
+  <div class="container">
+    {{if .encryptedPrivateKey}}
+      <div class="row">
+        <div class="col-md-6">
+          <h3>Use your wallet</h3>
+          Your wallet is ready to use!<br>
+          <strong>Here is your Ethereum deposit address: {{.ethereumAddress}}</strong>
+          <br><br>
+          Here are your encrypted credentials:
+          <code style="overflow-wrap: break-word; display: block">
+            {{ .encryptedPrivateKey}}
+          </code>
+          <a type="button" class="btn btn-lg btn-default" href="javascript:;" id="generate-api-key"><span class="glyphicon glyphicon-fire"></span> Sign Request (coming soon!) <span class="glyphicon glyphicon-fire"></span></a>
+      </div>
+    {{else}}
+      <div class="row">
+        <div class="col-md-6">
+          <h3>Create a wallet</h3>
+          <div id="keygen-result"></div>
+          <form class="create-wallet" action="javascript:;" method="post">
+            <p>Piggybank will not store this passphrase. This is to make sure you (and only you!) will have access to your funds. Make it strong, and don't forget it!</p>
+            <label for="input-public-key" class="sr-only">Passphrase</label>
+            <input type="password" id="passphrase" name="passphrase" class="form-control" placeholder="Strong Passphrase Here" required autofocus>
+            <br>
+            <a type="button" class="btn btn-lg btn-default" href="javascript:;" id="generate-api-key"><span class="glyphicon glyphicon-fire"></span> Generate <span class="glyphicon glyphicon-fire"></span></a>
+          </form>
+        </div>
+      </div>
+    {{end}}
+
+    <div class="row">
+      <hr>
+    </div>
+  
+  </div>
+  <script type="text/javascript" src="/static/keygen.js"></script>
+</body>
+</html>
