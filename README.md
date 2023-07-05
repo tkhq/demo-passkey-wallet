@@ -43,12 +43,22 @@ $ git push heroku main
 ```
 
 ## Configuring on Heroku
+
 Locally you can use a `.env` file to change configuration. If you want to set/change/remove configuration env vars on Heroku, use the Heroku CLI:
 ```sh
 $ heroku login
 $ heroku config:set TURNKEY_API_HOST=coordinator.tkhq.xyz
-$ heroku config:set TURNKEY_API_PRIVATE_KEY=<private-key>
 $ heroku config:set TURNKEY_ORGANIZATION_ID=<organization-id>
+$ heroku config:set TURNKEY_API_PRIVATE_KEY=<private-key>
 # more commands at <https://devcenter.heroku.com/articles/config-vars>
+```
 
+## Inspecting Heroku DB
+
+```sh
+# See <https://devcenter.heroku.com/articles/managing-heroku-postgres-using-cli>
+$ heroku login
+$ heroku pg:psql
+tkhq-piggybank::DATABASE=> show tables;
+# ...etc...
 ```
