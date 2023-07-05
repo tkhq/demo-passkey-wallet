@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/r-n-o/piggybank/internal/auth"
-	"github.com/r-n-o/piggybank/internal/models"
-	"github.com/r-n-o/piggybank/internal/turnkey"
+	"github.com/tkhq/piggybank/internal/auth"
+	"github.com/tkhq/piggybank/internal/models"
+	"github.com/tkhq/piggybank/internal/turnkey"
 )
 
 func HandleGetWallet(c *gin.Context) {

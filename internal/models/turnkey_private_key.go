@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/r-n-o/piggybank/internal/db"
+	"github.com/tkhq/piggybank/internal/db"
 	"gorm.io/gorm"
 )
 

@@ -8,10 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"github.com/joho/godotenv"
-	"github.com/r-n-o/piggybank/internal/db"
-	"github.com/r-n-o/piggybank/internal/handlers"
-	"github.com/r-n-o/piggybank/internal/models"
-	"github.com/r-n-o/piggybank/internal/turnkey"
+	"github.com/tkhq/piggybank/internal/db"
+	"github.com/tkhq/piggybank/internal/handlers"
+	"github.com/tkhq/piggybank/internal/models"
+	"github.com/tkhq/piggybank/internal/turnkey"
 )
 
 func main() {
@@ -71,8 +71,8 @@ func loadDatabase() {
 }
 
 func loadEnv() {
-	err := godotenv.Load(".env.local")
+	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file: %s", err.Error())
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/r-n-o/piggybank/internal/auth"
+	"github.com/tkhq/piggybank/internal/auth"
 )
 
 func HandleHome(c *gin.Context) {

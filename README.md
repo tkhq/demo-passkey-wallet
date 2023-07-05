@@ -6,25 +6,38 @@ and operations are user-directed.
 
 ## Running locally
 
+Install `go` and Postgres:
+```
+$ brew install go@1.19
+$ brew install postgresql@14
+```
+
+Run
+
+
 ```sh
 $ make build
 
-# via heroku
-$ heroku local
+# Copy the template env file and populate values
+$ cp .env.template .env
 
-# via `air` (auto-reload)
+# Launch via heroku
+$ heroku local -e .env
+
+# Launch via `air` (bonus: auto-reloads!)
 $ air
 
 # ...or manually!
-PORT=12345 ./bin/piggybank
+$ ./bin/piggybank
 ```
 
 Piggybank should now be running on [localhost:12345](http://localhost:12345/).
 
 ## Deploying to Heroku
 
+You will need credentials to perform this step. Slack Arnaud for details. Once you have creds:
 ```sh
-$ heroku create
+$ heroku login
+$ heroku git:remote -a tkhq-piggybank
 $ git push heroku main
-$ heroku open
 ```

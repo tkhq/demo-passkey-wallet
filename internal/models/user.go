@@ -5,7 +5,7 @@ import (
 	"html"
 	"strings"
 
-	"github.com/r-n-o/piggybank/internal/db"
+	"github.com/tkhq/piggybank/internal/db"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )

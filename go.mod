@@ -1,4 +1,4 @@
-module github.com/r-n-o/piggybank
+module github.com/tkhq/piggybank
 
 // +heroku goVersion go1.20
 go 1.19
