@@ -72,7 +72,10 @@ func loadDatabase() {
 
 func loadEnv() {
 	err := godotenv.Load(".env")
-	if err != nil {
+
+	// Error out if we're in local. Heroku sets DATABASE_URL automatically.
+	// When the app runs on Heroku, no .env file is expected.
+	if err != nil && os.Getenv("DATABASE_URL") == "" {
 		log.Fatalf("Error loading .env file: %s", err.Error())
 	}
 }

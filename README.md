@@ -41,3 +41,11 @@ $ heroku login
 $ heroku git:remote -a tkhq-piggybank
 $ git push heroku main
 ```
+
+## Configuring on Heroku
+Locally you can use a `.env` file to change configuration. If you want to set/change/remove configuration env vars on Heroku, use the Heroku CLI:
+```sh
+$ heroku login
+$ heroku config:set TURNKEY_API_PUBLIC_KEY=<public-key>
+# more commands at <https://devcenter.heroku.com/articles/config-vars>
+```
