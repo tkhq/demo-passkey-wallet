@@ -67,7 +67,7 @@ $ git push heroku main
 
 ### Deploying the frontend to Vercel
 
-This should happen automatically by pushing to `main`.
+This should happen automatically by pushing to `main`. Ask Arnaud if you need help.
 
 ## Production recipes
 
