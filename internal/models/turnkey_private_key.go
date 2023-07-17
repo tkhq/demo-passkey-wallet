@@ -9,12 +9,11 @@ import (
 // This private key is bound to a user via Turnkey Policies.
 type TurnkeyPrivateKey struct {
 	gorm.Model
-	User              User
-	UserID            int
-	Name              string `gorm:"size:255; not null;"`
-	TurnkeyUUID       string `gorm:"size:255; not null"`
-	TurnkeyPolicyUUID string `gorm:"size:255; not null"`
-	EthereumAddress   string `gorm:"size:255; not null"`
+	User            User
+	UserID          int
+	Name            string `gorm:"size:255; not null;"`
+	TurnkeyUUID     string `gorm:"size:255; not null"`
+	EthereumAddress string `gorm:"size:255; not null"`
 }
 
 func (key *TurnkeyPrivateKey) Save() (*TurnkeyPrivateKey, error) {
@@ -25,7 +24,7 @@ func (key *TurnkeyPrivateKey) Save() (*TurnkeyPrivateKey, error) {
 	return key, nil
 }
 
-func FindPrivateKey(u User) (*TurnkeyPrivateKey, error) {
+func GetPrivateKeyForUser(u User) (*TurnkeyPrivateKey, error) {
 	var privateKey TurnkeyPrivateKey
 	err := db.Database.Where("user_id=?", u.ID).Find(&privateKey).Error
 	if err != nil {

@@ -1,18 +1,51 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/sessions"
+	gormsessions "github.com/gin-contrib/sessions/gorm"
 	"github.com/gin-gonic/gin"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"github.com/joho/godotenv"
+	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	"github.com/tkhq/piggybank/internal/db"
-	"github.com/tkhq/piggybank/internal/handlers"
 	"github.com/tkhq/piggybank/internal/models"
 	"github.com/tkhq/piggybank/internal/turnkey"
+	"github.com/tkhq/piggybank/internal/types"
 )
+
+const PIGGYBANK_SESSION_NAME = "piggy_session"
+const PIGGYBANK_SESSION_SALT = "piggy_session_salt"
+const PIGGYBANK_SESSION_USER_ID_KEY = "user_id"
+
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w bodyLogWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func ginErrorLogMiddleware(c *gin.Context) {
+	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	c.Writer = blw
+	c.Next()
+	statusCode := c.Writer.Status()
+	if statusCode >= 500 {
+		//ok this is an request with error, let's make a record for it
+		// now print body (or log in your preferred way)
+		fmt.Printf("Internal error served: %s (status: %d)\n", blw.body.String(), statusCode)
+	}
+}
 
 func main() {
 	loadEnv()
@@ -25,6 +58,20 @@ func main() {
 
 	router := gin.New()
 	router.Use(gin.Logger())
+	router.Use(ginErrorLogMiddleware)
+
+	// Note: because this is a demo app, we can afford to open up CORS completely ("*" means "all origins").
+	// This isn't safe; if you're deploying a real application to production, restrict this to only the origins you need!
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"content-type"},
+		AllowCredentials: true,
+		MaxAge:           0,
+	}))
+
+	store := gormsessions.NewStore(db.Database, true, []byte(PIGGYBANK_SESSION_SALT))
+	router.Use(sessions.Sessions(PIGGYBANK_SESSION_NAME, store))
 
 	err := turnkey.Init(
 		os.Getenv("TURNKEY_API_HOST"),
@@ -39,35 +86,161 @@ func main() {
 	if err != nil {
 		log.Fatalf("Unable to initialize Turnkey client: %+v", err)
 	}
-	fmt.Printf("Initialized Turnkey client successfully. Whoami? %s\n", userID)
-
-	// Load all templates
-	router.LoadHTMLGlob("templates/*.tmpl.html")
-
-	// Load static assets
-	router.Static("/static", "static")
-
-	// Load root static assets (must live at the root to be picked up
-	router.StaticFile("/favicon.ico", "static/favicon.ico")
-	router.StaticFile("/apple-touch-icon.png", "static/apple-touch-icon.ico")
-	router.StaticFile("/site.webmanifest", "static/site.webmanifest")
+	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
 	// Define webapp routes
-	router.GET("/", handlers.HandleHome)
-	router.GET("/wallet", handlers.HandleGetWallet)
-	router.POST("/wallet/create", handlers.HandlePostWalletCreate)
-	router.GET("/signup", handlers.HandleGetSignup)
-	router.GET("/login", handlers.HandleGetLogin)
-	router.POST("/signup", handlers.HandlePostSignup)
-	router.POST("/login", handlers.HandlePostLogin)
-	router.POST("/logout", handlers.HandlePostLogout)
+	router.GET("/", func(ctx *gin.Context) {
+		// TODO: redirect to the right URL instead!
+		ctx.String(http.StatusOK, "This is Piggybank's backend. Welcome I guess?")
+	})
+
+	router.GET("/api/whoami", func(ctx *gin.Context) {
+		user := getCurrentUser(ctx)
+		if user != nil {
+			ctx.JSON(http.StatusOK, user)
+		} else {
+			// Empty response when there is no current user
+			ctx.JSON(http.StatusNoContent, nil)
+		}
+	})
+
+	router.GET("/api/registration/:email", func(ctx *gin.Context) {
+		email := ctx.Param("email")
+		user, err := models.FindUserByEmail(email)
+		if err == nil {
+			ctx.JSON(http.StatusOK, map[string]interface{}{
+				"userId":            user.ID,
+				"subOrganizationId": user.SubOrganizationId.String,
+			})
+		} else {
+			ctx.JSON(http.StatusNoContent, nil)
+		}
+	})
+
+	router.POST("/api/register", func(ctx *gin.Context) {
+		var requestBody types.RegistrationRequest
+		if err := ctx.BindJSON(&requestBody); err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		user, err := models.CreateUser(requestBody.Email)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+
+		subOrganizationId, err := turnkey.Client.CreateUserSubOrganization(requestBody.Email, requestBody.Attestation, requestBody.Challenge)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if _, err = models.UpdateUserTurnkeySubOrganization(user.ID, subOrganizationId); err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		login(ctx, user.ID)
+		ctx.String(http.StatusOK, "Piggybank account successfully created")
+	})
+
+	router.POST("/api/authenticate", func(ctx *gin.Context) {
+		var req types.AuthenticationRequest
+		if err := ctx.BindJSON(&req); err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		fmt.Printf("Forwarding: %s, %s, %s\n", req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
+		// var decodedStamp map[string]interface{}
+		// err = json.Unmarshal([]byte(req.SignedWhoamiRequest.Stamp), &decodedStamp)
+		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp, true)
+		if err != nil {
+			err = errors.Wrap(err, "error while forwarding signed whoami request")
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if status != 200 {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("expected 200 when forwarding whoami request. Got %d", status))
+			return
+		}
+
+		subOrganizationId := gjson.Get(string(bodyBytes), "organizationId").String()
+		user, err := models.FindUserBySubOrganizationId(subOrganizationId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Unable to find piggybank user for suborg ID %s", subOrganizationId))
+			return
+		}
+
+		login(ctx, user.ID)
+		ctx.String(http.StatusOK, "Successful login")
+	})
+
+	router.POST("/api/logout", func(ctx *gin.Context) {
+		logout(ctx)
+		ctx.String(http.StatusNoContent, "")
+	})
+
+	router.GET("/api/suborganization", func(ctx *gin.Context) {
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+		}
+
+		if !user.SubOrganizationId.Valid {
+			ctx.String(http.StatusInternalServerError, "null sub-organization id for current user")
+		} else {
+			subOrganization, err := turnkey.Client.GetSubOrganization(user.SubOrganizationId.String)
+			if err != nil {
+				ctx.String(http.StatusInternalServerError, err.Error())
+			}
+			ctx.Data(http.StatusOK, "application/json", subOrganization)
+		}
+	})
 
 	router.Run(":" + port)
 }
 
+func getCurrentUser(ctx *gin.Context) *models.User {
+	session := sessions.Default(ctx)
+
+	// Session.Get returns nil if the session doesn't have a given key
+	userIdOrNil := session.Get(PIGGYBANK_SESSION_USER_ID_KEY)
+	if userIdOrNil == nil {
+		return nil
+	}
+
+	userId := userIdOrNil.(uint)
+	user, err := models.FindUserById(userId)
+	if err != nil {
+		log.Print(fmt.Errorf("error while getting current user \"%d\": %w", userId, err))
+		return nil
+	}
+	return &user
+}
+
+func login(ctx *gin.Context, userId uint) {
+	session := sessions.Default(ctx)
+	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
+	err := session.Save()
+	if err != nil {
+		log.Printf("error while saving session for user %d: %+v", userId, err)
+	}
+}
+
+func logout(ctx *gin.Context) {
+	session := sessions.Default(ctx)
+	session.Delete(PIGGYBANK_SESSION_USER_ID_KEY)
+	err := session.Save()
+	if err != nil {
+		log.Printf("error while deleting session: %+v", err)
+	}
+}
+
 func loadDatabase() {
 	db.Connect()
-	db.Database.AutoMigrate(&models.User{}, &models.TurnkeyApiUser{}, &models.TurnkeyPrivateKey{})
+	db.Database.AutoMigrate(&models.User{}, &models.TurnkeyPrivateKey{})
 }
 
 func loadEnv() {

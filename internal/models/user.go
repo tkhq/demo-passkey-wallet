@@ -1,19 +1,18 @@
 package models
 
 import (
+	"database/sql"
 	"fmt"
-	"html"
-	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/tkhq/piggybank/internal/db"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-	Username string `gorm:"size:255;not null;unique" json:"username"`
-	Password string `gorm:"size:255;not null;" json:"-"`
+	Email             string         `gorm:"size:255;not null;unique" json:"email"`
+	SubOrganizationId sql.NullString `gorm:"size:255;unique;default:null" json:"subOrganizationId"`
 }
 
 func (user *User) Save() (*User, error) {
@@ -24,31 +23,67 @@ func (user *User) Save() (*User, error) {
 	return user, nil
 }
 
-func (user *User) BeforeSave(*gorm.DB) error {
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
+func CreateUser(email string) (*User, error) {
+	if email == "" {
+		return nil, errors.New("expected non-empty email to create user")
 	}
-	user.Password = string(passwordHash)
-	user.Username = html.EscapeString(strings.TrimSpace(user.Username))
-	return nil
+
+	user := User{
+		Email: email,
+	}
+	return user.Save()
 }
 
-func FindUserByName(username string) (User, error) {
+func FindUserByEmail(email string) (User, error) {
 	var user User
-	err := db.Database.Where("username=?", username).Find(&user).Error
+	err := db.Database.Where("email=?", email).First(&user).Error
 	if err != nil {
 		return User{}, err
 	}
 	return user, nil
 }
 
-func (user *User) CheckPassword(password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+func FindUserById(userId uint) (User, error) {
+	var user User
+	err := db.Database.Where("id=?", userId).Find(&user).Error
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
+}
+
+func FindUserBySubOrganizationId(subOrganizationId string) (User, error) {
+	var user User
+	err := db.Database.Where("sub_organization_id=?", subOrganizationId).Find(&user).Error
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
 }
 
 // Given an internal Piggybank customer name, return the name of that user on the Turnkey side
 // We prefix all end-users with "piggy-user-" for convenience
 func (user *User) TurnkeyName() string {
-	return fmt.Sprintf("piggy-user-%s", user.Username)
+	return fmt.Sprintf("piggybank-user-%s", user.Email)
+}
+
+func UpdateUserTurnkeySubOrganization(userId uint, subOrganizationId string) (*User, error) {
+	if subOrganizationId == "" {
+		return nil, errors.New("cannot update turnkey sub-organization to an empty ID")
+	}
+
+	user, err := FindUserById(userId)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot find user with ID %q for update", userId)
+	}
+
+	user.SubOrganizationId = sql.NullString{
+		String: subOrganizationId,
+		Valid:  true,
+	}
+	err = db.Database.Save(&user).Error
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while updating Turnkey SubOrganization to \"%s\"", subOrganizationId)
+	}
+	return &user, nil
 }
