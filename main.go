@@ -60,10 +60,8 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(ginErrorLogMiddleware)
 
-	// Note: because this is a demo app, we can afford to open up CORS completely ("*" means "all origins").
-	// This isn't safe; if you're deploying a real application to production, restrict this to only the origins you need!
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://piggybank-turnkey.vercel.app/"},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
