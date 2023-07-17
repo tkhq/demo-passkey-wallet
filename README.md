@@ -49,6 +49,9 @@ Piggybank's backend should now be running on [localhost:12345](http://localhost:
 ```
 $ cd frontend
 
+# Create your own .env.local file
+$ cp .env.example .env.local
+
 $ npm run dev
 ```
 

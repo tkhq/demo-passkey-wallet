@@ -15,6 +15,8 @@ browserInit({
   baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
 });
 
+const PIGGYBANK_RPID = process.env.NEXT_PUBLIC_PIGGYBANK_RPID!;
+
 type authenticationFormData = {
   email: string;
 };
@@ -135,7 +137,7 @@ async function signup(email: string) {
   const attestation = await getWebAuthnAttestation({
     publicKey: {
       rp: {
-        id: "localhost",
+        id: PIGGYBANK_RPID,
         name: "Piggybank",
       },
       challenge,
@@ -175,7 +177,7 @@ async function signup(email: string) {
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <Image className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Piggybank"/>
+        <Image width={400} height={400} className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Piggybank"/>
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-zinc-900">Create or Access your account</h2>
       </div>
 

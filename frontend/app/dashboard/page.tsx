@@ -26,7 +26,6 @@ async function subOrganizationFetcher(url: string): Promise<subOrganization> {
 }
 
 
-
 export default function Dashboard() {
   const { state } = useAuth();
   const router = useRouter();
