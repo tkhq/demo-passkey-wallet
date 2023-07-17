@@ -42,27 +42,24 @@ const base64UrlEncode = (challenge: ArrayBuffer): string => {
     .replace(/=/g, "");
 };
 
-
-
 export default function Auth() {
   const { state, setState } = useAuth();
   const [ willRedirect, setWillRedirect ] = useState(false);
   const router = useRouter();
-  
-  if (state.isLoggedIn === true) {
-    // Redirect the user home if already logged in
-    router.push('/');
-    return
-  }
 
   useEffect(() => {
     // Force a re-fetch on the next page
     state.isLoaded = false
     setState(state)
-  }, [willRedirect])
+  }, [willRedirect, setState, state])
 
   const { register: subOrgFormRegister, handleSubmit: subOrgFormSubmit } = useForm<authenticationFormData>();
 
+  if (state.isLoggedIn === true) {
+    // Redirect the user home if already logged in
+    router.push('/');
+    return
+  }
 
 /**
  * This function looks up whether a given email is registered with Piggybank already
@@ -178,7 +175,7 @@ async function signup(email: string) {
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <img className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Piggybank"/>
+        <Image className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Piggybank"/>
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-zinc-900">Create or Access your account</h2>
       </div>
 
