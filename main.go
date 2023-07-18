@@ -141,7 +141,7 @@ func main() {
 			return
 		}
 
-		login(ctx, user.ID)
+		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Piggybank account successfully created")
 	})
 
@@ -173,7 +173,7 @@ func main() {
 			return
 		}
 
-		login(ctx, user.ID)
+		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Successful login")
 	})
 
@@ -222,7 +222,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 	return &user
 }
 
-func login(ctx *gin.Context, userId uint) {
+func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session := sessions.Default(ctx)
 	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
 	// Needed to have Set-Cookies work cross-domain. Here's the failure message from chrome otherwise:
@@ -231,6 +231,7 @@ func login(ctx *gin.Context, userId uint) {
 	// > The Set-Cookie had to have been set with "SameSite=None" to enable cross-site usage.
 	session.Options(sessions.Options{
 		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 	err := session.Save()
 	if err != nil {
