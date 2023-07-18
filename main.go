@@ -186,6 +186,7 @@ func main() {
 		user := getCurrentUser(ctx)
 		if user == nil {
 			ctx.String(http.StatusForbidden, "no current user")
+			return
 		}
 
 		if !user.SubOrganizationId.Valid {
@@ -194,6 +195,7 @@ func main() {
 			subOrganization, err := turnkey.Client.GetSubOrganization(user.SubOrganizationId.String)
 			if err != nil {
 				ctx.String(http.StatusInternalServerError, err.Error())
+				return
 			}
 			ctx.Data(http.StatusOK, "application/json", subOrganization)
 		}
