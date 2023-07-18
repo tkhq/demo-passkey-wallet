@@ -1,4 +1,4 @@
-module github.com/tkhq/piggybank
+module github.com/tkhq/demo-passkey-wallet
 
 // +heroku goVersion go1.20
 go 1.19

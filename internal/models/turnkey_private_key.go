@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/tkhq/piggybank/internal/db"
+	"github.com/tkhq/demo-passkey-wallet/internal/db"
 	"gorm.io/gorm"
 )
 

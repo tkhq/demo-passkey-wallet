@@ -15,10 +15,10 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
-	"github.com/tkhq/piggybank/internal/db"
-	"github.com/tkhq/piggybank/internal/models"
-	"github.com/tkhq/piggybank/internal/turnkey"
-	"github.com/tkhq/piggybank/internal/types"
+	"github.com/tkhq/demo-passkey-wallet/internal/db"
+	"github.com/tkhq/demo-passkey-wallet/internal/models"
+	"github.com/tkhq/demo-passkey-wallet/internal/turnkey"
+	"github.com/tkhq/demo-passkey-wallet/internal/types"
 )
 
 const PIGGYBANK_SESSION_NAME = "piggy_session"

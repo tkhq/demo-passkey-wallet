@@ -1,8 +1,17 @@
-# Piggybank
+# Demo Passkey Wallet
 
-This repo contains a sample backend application, written in Go, to onboard
-users into a fictional "piggybank" business. The crypto keys are user-owned,
-and operations are user-directed.
+This repo contains a sample application with a frontend and backend component to onboard users through passkeys. Passkey signatures are used for registration and authentication. The backend component forwards these signatures to [Turnkey](https://turnkey.io).
+
+Under the hood each user registering their passkey results in a new Turnkey sub-organizationn. The crypto keys are user-owned, and operations are user-directed. The frontend, backend, or Turnkey itself do not have the ability to move funds or take action on these sub-organizations.
+
+These sub-organizations roll up to a single parent organization. The parent organization has **read-access** to all sub-organizations, but no ability to perform activities (e.g. signatures, user creation, etc). Learn more about Turnkey Activities [in our documentation](https://turnkey.readme.io/reference/key-concepts-1#activities).
+
+## Tech Stack
+
+* The frontend is a simple NextJS app deployed with Vercel. The frontend uses the [Turnkey JS SDK](https://github.com/tkhq/sdk) to power passkey interactions.
+* The backend is a gin webapp serving JSON endpoints, deployed with Heroku. It uses the [Turnkey Golang SDK](https://github.com/tkhq/go-sdk) to interact with the Turnkey API.
+
+Read on for more technical details.
 
 ## Running locally
 
@@ -20,7 +29,7 @@ Start the DB:
 $ pg_ctl -D /opt/homebrew/var/postgres -o "-p 5555" start
 
 # You can check that the DB works by running:
-$ psql -p 5555 -d piggybank
+$ psql -p 5555 -d demo-passkey-wallet
 ```
 
 ### Backend
@@ -40,10 +49,10 @@ $ heroku local -e .env
 $ air
 
 # ...or manually!
-$ ./bin/piggybank
+$ ./bin/backend
 ```
 
-Piggybank's backend should now be running on [localhost:12345](http://localhost:12345/).
+The backend should now be running on [localhost:12345](http://localhost:12345/).
 
 ### Frontend
 ```
@@ -64,7 +73,7 @@ The frontend should start on port 3000.
 You will need credentials to perform this step. Slack Arnaud for details. Once you have creds:
 ```sh
 $ heroku login
-$ heroku git:remote -a tkhq-piggybank
+$ heroku git:remote -a tkhq-demo-passkey-wallet
 $ git push heroku main
 ```
 
@@ -91,6 +100,6 @@ $ heroku config:set TURNKEY_API_PRIVATE_KEY=<private-key>
 # See <https://devcenter.heroku.com/articles/managing-heroku-postgres-using-cli>
 $ heroku login
 $ heroku pg:psql
-tkhq-piggybank::DATABASE=> show tables;
+tkhq-demo-passkey-wallet::DATABASE=> show tables;
 # ...etc...
 ```

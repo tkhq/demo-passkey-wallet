@@ -1,1 +1,1 @@
-web: bin/piggybank
+web: bin/backend

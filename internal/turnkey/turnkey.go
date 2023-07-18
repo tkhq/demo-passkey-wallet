@@ -12,13 +12,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
+	"github.com/tkhq/demo-passkey-wallet/internal/types"
 	"github.com/tkhq/go-sdk"
 	"github.com/tkhq/go-sdk/pkg/api/client"
 	"github.com/tkhq/go-sdk/pkg/api/client/activities"
 	"github.com/tkhq/go-sdk/pkg/api/client/organizations"
 	"github.com/tkhq/go-sdk/pkg/api/client/private_keys"
 	"github.com/tkhq/go-sdk/pkg/api/client/users"
-	"github.com/tkhq/piggybank/internal/types"
 
 	"github.com/tkhq/go-sdk/pkg/api/models"
 	"github.com/tkhq/go-sdk/pkg/apikey"

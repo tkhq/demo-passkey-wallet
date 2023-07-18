@@ -1,11 +1,11 @@
 {
-  "name": "Piggybank",
-  "description": "Sample application",
+  "name": "Demo Passkey Wallet",
+  "description": "Demo Passkey Wallet",
   "keywords": [
-    "piggy",
-    "bank",
     "sample",
+    "wallet",
+    "passkeys",
     "example"
   ],
-  "repository": "https://github.com/tkhq/piggybank"
+  "repository": "https://github.com/tkhq/demo-passkey-wallet"
 }
