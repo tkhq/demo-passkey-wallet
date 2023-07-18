@@ -1,3 +1,4 @@
 .env
-bin/piggybank
+bin/backend
 tmp
+**/.DS_Store
