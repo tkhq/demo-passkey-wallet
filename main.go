@@ -57,6 +57,8 @@ func main() {
 	}
 
 	router := gin.New()
+	router.Use(gin.Recovery())
+
 	router.Use(gin.Logger())
 	router.Use(ginErrorLogMiddleware)
 
