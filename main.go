@@ -226,16 +226,6 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 
 func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session := sessions.Default(ctx)
-	// Needed to have Set-Cookies work cross-domain. Here's the failure message from chrome otherwise:
-	// > This Set-Cookie header didn't specify a "SameSite" attribute and was defaulted to "SameSite=Lax,"
-	// > and was blocked because it came from a cross-site response which was not the response to a top-level navigation.
-	// > The Set-Cookie had to have been set with "SameSite=None" to enable cross-site usage.
-	// if os.Getenv("USE_LOCALHOST") == "false" {
-	// 	session.Options(sessions.Options{
-	// 		Secure:   true,
-	// 		SameSite: http.SameSiteNoneMode,
-	// 	})
-	// }
 
 	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
 	err := session.Save()
