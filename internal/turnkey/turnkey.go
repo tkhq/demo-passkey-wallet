@@ -107,7 +107,13 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 	fmt.Printf("Creating sub-org for user %s...\n", userEmail)
 
 	url := "https://" + c.TurnkeyApiHost + "/public/v1/submit/create_sub_organization"
-	subOrganizationName := fmt.Sprintf("PiggyOrg for %s", strings.ReplaceAll(userEmail, "@", "-at-"))
+	sanitizedEmail := strings.ReplaceAll(userEmail, "@", "-at-")
+	sanitizedEmail = strings.ReplaceAll(sanitizedEmail, "+", "-plus-")
+	subOrganizationName := fmt.Sprintf("SubOrg for %s", sanitizedEmail)
+	// Trim name if too long. TODO: this should be exposed in our public docs / SDK.
+	if len(subOrganizationName) >= 255 {
+		subOrganizationName = subOrganizationName[:255]
+	}
 
 	body := strings.TrimSpace(fmt.Sprintf(`{
 				"type": "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V2",
