@@ -63,7 +63,7 @@ func main() {
 	router.Use(ginErrorLogMiddleware)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://piggybank-turnkey.vercel.app"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://piggybank-turnkey.vercel.app", "https://wallet.tx.xyz"},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
