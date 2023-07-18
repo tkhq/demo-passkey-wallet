@@ -16,7 +16,7 @@ browserInit({
   baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
 });
 
-const PIGGYBANK_RPID = process.env.NEXT_PUBLIC_PIGGYBANK_RPID!;
+const DEMO_PASSKEY_WALLET_RPID = process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
 
 type authenticationFormData = {
   email: string;
@@ -61,7 +61,7 @@ export default function Auth() {
   }, [router, state])
 
 /**
- * This function looks up whether a given email is registered with Piggybank already
+ * This function looks up whether a given email is registered with our backend already
  * If it is registered, a webauthn "get" ceremony takes place.
  * If it isn't, a webauthn "create" ceremony takes place instead.
  * @param data form data from the authentication form.
@@ -79,7 +79,7 @@ async function registerOrAuthenticate (data: authenticationFormData) {
 async function subOrganizationIdForEmail(email: string): Promise<string|null> {
   const res = await axios.get(registrationStatusUrl(email));
 
-  // If API returns a non-empty 200, this email maps to an existing Piggybank user.
+  // If API returns a non-empty 200, this email maps to an existing user.
   if (res.status == 200) {
     return res.data["subOrganizationId"]
   } else if (res.status === 204) {
@@ -93,8 +93,8 @@ async function subOrganizationIdForEmail(email: string): Promise<string|null> {
 
 // In order to know whether the user is logged in for `subOrganizationId`, we make them sign
 // a request for Turnkey's "whoami" endpoint.
-// Piggybank's backend will then forward to Turnkey and get a response on whether the stamp was valid.
-// If this is successful, Piggybank will issue a logged in session.
+// The backend will then forward to Turnkey and get a response on whether the stamp was valid.
+// If this is successful, our backend will issue a logged in session.
 async function authenticate(subOrganizationId: string) {
   const whoamiInput: TPostGetWhoamiInput = {
     body: {
@@ -121,8 +121,8 @@ async function authenticate(subOrganizationId: string) {
 }
 
 /**
- * This signup function triggers a webauthn "create" ceremony and POSTs the resulting attestation to Piggybank
- * On the backend, Piggybank uses Turnkey to create a brand new sub-organization with a new private key.
+ * This signup function triggers a webauthn "create" ceremony and POSTs the resulting attestation to the backend
+ * The backend uses Turnkey to create a brand new sub-organization with a new private key.
  * @param email user email
  */
 async function signup(email: string) {
@@ -134,8 +134,8 @@ async function signup(email: string) {
   const attestation = await getWebAuthnAttestation({
     publicKey: {
       rp: {
-        id: PIGGYBANK_RPID,
-        name: "Piggybank",
+        id: DEMO_PASSKEY_WALLET_RPID,
+        name: "Demo Passkey Wallet",
       },
       challenge,
       pubKeyCredParams: [
@@ -174,7 +174,7 @@ async function signup(email: string) {
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <Image width={400} height={400} className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Piggybank"/>
+        <Image width={400} height={400} className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Demo Passkey Wallet Logo"/>
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-zinc-900">Create or Access your account</h2>
       </div>
 

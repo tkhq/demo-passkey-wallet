@@ -1,6 +1,6 @@
 {
-   "name": "Piggybank",
-   "short_name": "Piggybank",
+   "name": "Demo Passkey Wallet",
+   "short_name": "Wallet",
    "icons": [
       {
          "src": "/static/android-chrome-192x192.png",

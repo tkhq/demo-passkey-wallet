@@ -1,26 +1,26 @@
 
-const PIGGYBANK_API_BASE_URL = process.env.NEXT_PUBLIC_PIGGYBANK_API_BASE_URL!;
+const BACKEND_API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL!;
 
 export function registerUrl(): string {
-    return PIGGYBANK_API_BASE_URL +  "/api/register";
+    return BACKEND_API_BASE_URL +  "/api/register";
 }
 
 export function authenticateUrl(): string {
-    return PIGGYBANK_API_BASE_URL +  "/api/authenticate";
+    return BACKEND_API_BASE_URL +  "/api/authenticate";
 }
 
 export function registrationStatusUrl(email: string): string {
-    return PIGGYBANK_API_BASE_URL + "/api/registration/" + email;
+    return BACKEND_API_BASE_URL + "/api/registration/" + email;
 }
 
 export function whoamiUrl(): string {
-    return PIGGYBANK_API_BASE_URL + "/api/whoami";
+    return BACKEND_API_BASE_URL + "/api/whoami";
 }
 
 export function logoutUrl(): string {
-    return PIGGYBANK_API_BASE_URL + "/api/logout";
+    return BACKEND_API_BASE_URL + "/api/logout";
 }
 
 export function getSubOrganizationUrl(): string {
-    return PIGGYBANK_API_BASE_URL + "/api/suborganization";
+    return BACKEND_API_BASE_URL + "/api/suborganization";
 }

@@ -61,10 +61,10 @@ func FindUserBySubOrganizationId(subOrganizationId string) (User, error) {
 	return user, nil
 }
 
-// Given an internal Piggybank customer name, return the name of that user on the Turnkey side
-// We prefix all end-users with "piggy-user-" for convenience
+// Given an internal user name, return the name of that user on the Turnkey side
+// We prefix all end-users with "wallet-user-" for convenience
 func (user *User) TurnkeyName() string {
-	return fmt.Sprintf("piggybank-user-%s", user.Email)
+	return fmt.Sprintf("wallet-user-%s", user.Email)
 }
 
 func UpdateUserTurnkeySubOrganization(userId uint, subOrganizationId string) (*User, error) {

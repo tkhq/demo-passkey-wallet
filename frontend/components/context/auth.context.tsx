@@ -5,21 +5,21 @@ import { Dispatch, SetStateAction, createContext, useContext, useEffect, useStat
 import { whoamiUrl } from '@/utils/urls';
 import useSWR from 'swr';
 
-type PiggybankAuthState = {
+type AuthState = {
     isLoaded: boolean,
     isLoggedIn: boolean,
     email: string|null,
     userId: string|null,
 }
 
-const initialState: PiggybankAuthState = {
+const initialState: AuthState = {
     isLoaded: false,
     isLoggedIn: false,
     email: null,
     userId: null,
 };
 
-async function authStateFetcher(url: string): Promise<PiggybankAuthState> {
+async function authStateFetcher(url: string): Promise<AuthState> {
   let response = await axios.get(url, {withCredentials: true})
   if (response.status === 200) {
       return {
@@ -43,11 +43,11 @@ async function authStateFetcher(url: string): Promise<PiggybankAuthState> {
 }
 
 export const AuthContext = createContext<{
-  state: PiggybankAuthState;
-  setState: Dispatch<SetStateAction<PiggybankAuthState>>;
+  state: AuthState;
+  setState: Dispatch<SetStateAction<AuthState>>;
 }>({
   state: initialState,
-  setState: function (value: SetStateAction<PiggybankAuthState>): void {
+  setState: function (value: SetStateAction<AuthState>): void {
     throw new Error('Function not implemented.');
   }
 });

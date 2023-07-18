@@ -21,9 +21,9 @@ import (
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
 )
 
-const PIGGYBANK_SESSION_NAME = "piggy_session"
-const PIGGYBANK_SESSION_SALT = "piggy_session_salt"
-const PIGGYBANK_SESSION_USER_ID_KEY = "user_id"
+const SESSION_NAME = "demo_session"
+const SESSION_SALT = "demo_session_salt"
+const SESSION_USER_ID_KEY = "user_id"
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
@@ -63,16 +63,16 @@ func main() {
 	router.Use(ginErrorLogMiddleware)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://piggybank-turnkey.vercel.app", "https://wallet.tx.xyz"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://wallet.tx.xyz"},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
 		MaxAge:           600,
 	}))
 
-	store := gormsessions.NewStore(db.Database, true, []byte(PIGGYBANK_SESSION_SALT))
+	store := gormsessions.NewStore(db.Database, true, []byte(SESSION_SALT))
 	store.Options(sessions.Options{MaxAge: 60 * 60 * 24}) // sessions expire daily
-	router.Use(sessions.Sessions(PIGGYBANK_SESSION_NAME, store))
+	router.Use(sessions.Sessions(SESSION_NAME, store))
 
 	err := turnkey.Init(
 		os.Getenv("TURNKEY_API_HOST"),
@@ -89,10 +89,8 @@ func main() {
 	}
 	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
-	// Define webapp routes
 	router.GET("/", func(ctx *gin.Context) {
-		// TODO: redirect to the right URL instead!
-		ctx.String(http.StatusOK, "This is Piggybank's backend. Welcome I guess?")
+		ctx.String(http.StatusOK, "This is the Demo Passkey Wallet backend. Welcome I guess? Head to https://wallet.tx.xyz if you're lost.")
 	})
 
 	router.GET("/api/whoami", func(ctx *gin.Context) {
@@ -143,7 +141,7 @@ func main() {
 		}
 
 		startUserLoginSession(ctx, user.ID)
-		ctx.String(http.StatusOK, "Piggybank account successfully created")
+		ctx.String(http.StatusOK, "Account successfully created")
 	})
 
 	router.POST("/api/authenticate", func(ctx *gin.Context) {
@@ -170,7 +168,7 @@ func main() {
 		subOrganizationId := gjson.Get(string(bodyBytes), "organizationId").String()
 		user, err := models.FindUserBySubOrganizationId(subOrganizationId)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Unable to find piggybank user for suborg ID %s", subOrganizationId))
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Unable to find user for suborg ID %s", subOrganizationId))
 			return
 		}
 
@@ -209,7 +207,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 	session := sessions.Default(ctx)
 
 	// Session.Get returns nil if the session doesn't have a given key
-	userIdOrNil := session.Get(PIGGYBANK_SESSION_USER_ID_KEY)
+	userIdOrNil := session.Get(SESSION_USER_ID_KEY)
 	if userIdOrNil == nil {
 		fmt.Println("session.Get returned nil; no session provided?")
 		return nil
@@ -227,7 +225,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session := sessions.Default(ctx)
 
-	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
+	session.Set(SESSION_USER_ID_KEY, userId)
 	err := session.Save()
 	if err != nil {
 		log.Printf("error while saving session for user %d: %+v", userId, err)
@@ -236,7 +234,7 @@ func startUserLoginSession(ctx *gin.Context, userId uint) {
 
 func endUserSession(ctx *gin.Context) {
 	session := sessions.Default(ctx)
-	userIdOrNil := session.Get(PIGGYBANK_SESSION_USER_ID_KEY)
+	userIdOrNil := session.Get(SESSION_USER_ID_KEY)
 	if userIdOrNil == nil {
 		log.Printf("error: trying to end session but no user ID data")
 		return

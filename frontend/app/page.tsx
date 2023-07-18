@@ -8,7 +8,7 @@ export default async function Home() {
         <Image
           className="mx-auto align-center"
           src="/piggybank-logo.png"
-          alt="Piggybank Logo"
+          alt="Demo Passkey Wallet Logo"
           width={400}
           height={400}
           priority
@@ -31,7 +31,7 @@ export default async function Home() {
             </span>
           </h2>
           <p className={`m-0 max-w-[40ch] text-sm opacity-50`}>
-            Piggybank cannot access your keys, cannot access your coins. Turnkey magic.
+            We cannot access your keys, cannot access your coins. Turnkey magic.
           </p>
         </a>
 
@@ -65,7 +65,7 @@ export default async function Home() {
             </span>
           </h2>
           <p className={`m-0 max-w-[40ch] text-sm opacity-50`}>
-            Curious about how Piggybank is built? Check it out for yourself!
+            Curious about how this is built? Check out the code for yourself!
           </p>
         </a>
       </div>

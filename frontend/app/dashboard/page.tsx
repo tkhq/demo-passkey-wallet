@@ -47,7 +47,7 @@ export default function Dashboard() {
     <div className="mb-32 grid lg:mb-0 lg:mt-8 lg:flex max-w-5xl">
       <AuthWidget></AuthWidget>
       <p className="text-md flex-none lg:w-1/3 p-8">
-        <span className="text-xl">Welcome to your Piggybank dashboard! 🐷</span>
+        <span className="text-xl">Welcome to your dashboard!</span>
         <br />
         <br />
         You are the owner of a completely independent Turnkey sub-organization.

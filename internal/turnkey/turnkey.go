@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -118,7 +117,7 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 					"subOrganizationName": %q,
 					"rootUsers": [
 						{
-							"userName": "Piggybank User",
+							"userName": "Wallet User",
 							"userEmail": %q,
 							"apiKeys": [],
 							"authenticators": [{
@@ -135,7 +134,7 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 						{
 							"userName": "Onboarding Helper",
 							"apiKeys": [{
-								"apiKeyName": "Piggybank Systems",
+								"apiKeyName": "Wallet Backend",
 								"publicKey": %q
 							}],
 							"authenticators": []
@@ -253,34 +252,6 @@ func (c *TurnkeyApiClient) GetEthereumAddress(privateKeyId string) (string, erro
 	}
 
 	return resp.Payload.PrivateKey.Addresses[0].Address, nil
-}
-
-// TODO: convert these bash scripts into proper SDK calls
-// CreateUsers and CreateUserTags are unfortunately missing from it
-// - CreateUsers is available in our public API, but requires us to regenerate the SDK with the latest protos
-// - CreateUserTag isn't available officially. We're cheating a bit.
-func (c *TurnkeyApiClient) CreateApiUser(name, publicApiKey string) (string, error) {
-	output, err := exec.Command("/bin/bash", "scripts/create_turnkey_user.sh", c.OrganizationID, name, publicApiKey).Output()
-	if err != nil {
-		return "", err
-	}
-
-	var activityResponse models.V1ActivityResponse
-	err = activityResponse.UnmarshalBinary(output)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to parse activity response")
-	}
-	if activityResponse.Activity == nil {
-		return "", errors.Wrapf(err, "nil activity?", output)
-
-	}
-
-	result, err := c.WaitForResult(c.OrganizationID, *activityResponse.Activity.ID)
-	if err != nil {
-		return "", err
-	}
-
-	return result.CreateUsersResult.UserIds[0], nil
 }
 
 // Utility to wait for an activity result

@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Represents a Turnkey private key, created by Piggybank on behalf of a user
+// Represents a Turnkey private key, created by our backend on behalf of a user
 // This private key is bound to a user via Turnkey Policies.
 type TurnkeyPrivateKey struct {
 	gorm.Model
