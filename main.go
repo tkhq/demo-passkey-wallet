@@ -67,10 +67,11 @@ func main() {
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
-		MaxAge:           0,
+		MaxAge:           600,
 	}))
 
 	store := gormsessions.NewStore(db.Database, true, []byte(PIGGYBANK_SESSION_SALT))
+	store.Options(sessions.Options{MaxAge: 60 * 60 * 24}) // sessions expire daily
 	router.Use(sessions.Sessions(PIGGYBANK_SESSION_NAME, store))
 
 	err := turnkey.Init(
@@ -178,7 +179,7 @@ func main() {
 	})
 
 	router.POST("/api/logout", func(ctx *gin.Context) {
-		logout(ctx)
+		endUserSession(ctx)
 		ctx.String(http.StatusNoContent, "")
 	})
 
@@ -210,6 +211,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 	// Session.Get returns nil if the session doesn't have a given key
 	userIdOrNil := session.Get(PIGGYBANK_SESSION_USER_ID_KEY)
 	if userIdOrNil == nil {
+		fmt.Println("session.Get returned nil; no session provided?")
 		return nil
 	}
 
@@ -224,28 +226,41 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 
 func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session := sessions.Default(ctx)
-	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
 	// Needed to have Set-Cookies work cross-domain. Here's the failure message from chrome otherwise:
 	// > This Set-Cookie header didn't specify a "SameSite" attribute and was defaulted to "SameSite=Lax,"
 	// > and was blocked because it came from a cross-site response which was not the response to a top-level navigation.
 	// > The Set-Cookie had to have been set with "SameSite=None" to enable cross-site usage.
-	session.Options(sessions.Options{
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
-	})
+	if os.Getenv("USE_LOCALHOST") == "false" {
+		session.Options(sessions.Options{
+			Secure:   true,
+			SameSite: http.SameSiteNoneMode,
+		})
+	}
+
+	session.Set(PIGGYBANK_SESSION_USER_ID_KEY, userId)
 	err := session.Save()
 	if err != nil {
 		log.Printf("error while saving session for user %d: %+v", userId, err)
 	}
 }
 
-func logout(ctx *gin.Context) {
+func endUserSession(ctx *gin.Context) {
 	session := sessions.Default(ctx)
-	session.Delete(PIGGYBANK_SESSION_USER_ID_KEY)
+	userIdOrNil := session.Get(PIGGYBANK_SESSION_USER_ID_KEY)
+	if userIdOrNil == nil {
+		log.Printf("error: trying to end session but no user ID data")
+		return
+	}
+	session.Options(sessions.Options{
+		MaxAge: -1,
+		Path:   "/",
+	})
+	session.Clear()
 	err := session.Save()
 	if err != nil {
-		log.Printf("error while deleting session: %+v", err)
+		log.Printf("error while deleting current session: %+v", err)
 	}
+	log.Printf("Success: user %d was logged out", userIdOrNil.(uint))
 }
 
 func loadDatabase() {

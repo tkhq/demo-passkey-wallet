@@ -5,6 +5,7 @@ import { useAuth } from '@/components/context/auth.context';
 import { getSubOrganizationUrl } from '@/utils/urls';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import useSWR from 'swr';
 
 type subOrganization = {
@@ -31,12 +32,13 @@ export default function Dashboard() {
   const router = useRouter();
   const { data, error } = useSWR(getSubOrganizationUrl(), subOrganizationFetcher)
 
-  
-  if (state.isLoaded === true && state.isLoggedIn === false) {
-    // Redirect the user to auth if not logged in
-    router.push('/auth');
-    return
-  }
+  useEffect(() => {
+    if (state.isLoaded === true && state.isLoggedIn === false) {
+      // Redirect the user to auth if not logged in
+      router.push('/auth');
+      return
+    }
+  }, [state, router])
 
   if (error) return <div>Failed to sub-organization</div>;
   if (!data) return <div>Loading...</div>;
