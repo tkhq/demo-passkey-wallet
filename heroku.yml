@@ -5,4 +5,4 @@ build:
     - go
 
 run:
-  web: backend
+  web: demo-passkey-wallet

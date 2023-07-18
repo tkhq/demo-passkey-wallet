@@ -49,7 +49,7 @@ $ heroku local -e .env
 $ air
 
 # ...or manually!
-$ ./bin/backend
+$ ./bin/demo-passkey-wallet
 ```
 
 The backend should now be running on [localhost:12345](http://localhost:12345/).

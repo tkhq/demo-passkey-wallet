@@ -1,1 +1,1 @@
-web: bin/backend
+web: bin/demo-passkey-wallet
