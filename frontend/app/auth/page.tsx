@@ -4,12 +4,13 @@ import Image from 'next/image'
 import { FederatedRequest, browserInit, getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
-import { authenticateUrl, registerUrl, registrationStatusUrl } from "../../utils/urls"
+import { authenticateUrl, registerUrl, registrationStatusUrl, whoamiUrl } from "../../utils/urls"
 import { AuthConsumer, useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
 import { getWebAuthnAssertion } from '@turnkey/http/dist/webauthn';
 import { TPostGetWhoamiInput, federatedPostGetOrganization, federatedPostGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import { useEffect, useState } from 'react';
+import { useSWRConfig } from 'swr';
 
 browserInit({
   baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
@@ -45,23 +46,19 @@ const base64UrlEncode = (challenge: ArrayBuffer): string => {
 };
 
 export default function Auth() {
-  const { state, setState } = useAuth();
-  const [ willRedirect, setWillRedirect ] = useState(false);
+  const { state } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    // Force a re-fetch on the next page
-    state.isLoaded = false
-    setState(state)
-  }, [willRedirect, setState, state])
+  const { mutate } = useSWRConfig()
 
   const { register: subOrgFormRegister, handleSubmit: subOrgFormSubmit } = useForm<authenticationFormData>();
 
-  if (state.isLoggedIn === true) {
-    // Redirect the user home if already logged in
-    router.push('/');
-    return
-  }
+  useEffect(() => {
+    if (state.isLoggedIn === true) {
+      // Redirect the user to their dashboard if already logged in
+      router.push('/dashboard');
+      return
+    }
+  }, [router, state])
 
 /**
  * This function looks up whether a given email is registered with Piggybank already
@@ -112,7 +109,7 @@ async function authenticate(subOrganizationId: string) {
 
   if (res.status === 200) {
     console.log("Successfully logged in! Redirecting you to dashboard");
-    setWillRedirect(true);
+    mutate(whoamiUrl())
     router.push("/dashboard")
     return
   } else {
@@ -163,7 +160,7 @@ async function signup(email: string) {
   
   if (res.status === 200) {
     console.log("Successfully registered! Redirecting you to dashboard");
-    setWillRedirect(true);
+    mutate(whoamiUrl())
     router.push("/dashboard")
     return
   } else {

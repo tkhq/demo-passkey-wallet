@@ -2,10 +2,13 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from './context/auth.context';
 import axios from 'axios';
-import { logoutUrl, registerUrl } from '@/utils/urls';
+import { logoutUrl, whoamiUrl } from '@/utils/urls';
+import { useSWRConfig } from 'swr';
 
 export function AuthWidget() {
     const router = useRouter();
+    const { mutate } = useSWRConfig()
+
     const handleLogout = async () => {
         if (confirm("You are about to log out. Continue?") === true) {
             const res = await axios.post(logoutUrl(), {}, { withCredentials: true });
@@ -13,6 +16,7 @@ export function AuthWidget() {
                 // We expect a 204 (no content) response from our backend
                 console.error("error while logging you out: ", res);
             } else {
+                mutate(whoamiUrl())
                 // Redirect home
                 router.push("/")
                 return
