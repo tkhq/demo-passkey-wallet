@@ -46,6 +46,7 @@ const base64UrlEncode = (challenge: ArrayBuffer): string => {
 };
 
 export default function Auth() {
+  const [disabledSubmit, setDisabledSubmit] = useState(false)
   const { state } = useAuth();
   const router = useRouter();
   const { mutate } = useSWRConfig()
@@ -67,6 +68,7 @@ export default function Auth() {
  * @param data form data from the authentication form.
  */
 async function registerOrAuthenticate (data: authenticationFormData) {
+  setDisabledSubmit(true)
   const subOrganizationId = await subOrganizationIdForEmail(data.email);
 
   if (subOrganizationId !== null) {
@@ -188,7 +190,11 @@ async function signup(email: string) {
           </div>
 
           <div>
-            <button type="submit" className="flex w-full justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900">Authenticate with Passkeys</button>
+            <button type="submit" disabled={disabledSubmit} className="flex w-full justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
+              {
+                disabledSubmit ? "Loading..." : "Authenticate with Passkeys"
+              }
+            </button>
           </div>
         </form>
       </div>
