@@ -47,12 +47,13 @@ export default function Dashboard() {
   return (
     <div>
       <AuthWidget></AuthWidget>
-      <h2 className="text-xl border text-center rounded-md flex-none m-8 p-4 bg-zinc-900 text-white tracking-wider uppercase">Dashboard</h2>
+      <h2 className="text-xl border text-center rounded-md flex-none mt-8 p-4 bg-zinc-900 text-white tracking-wider uppercase">Dashboard</h2>
       <div className="mb-32 grid lg:mb-0 lg:mt-8 lg:flex max-w-5xl">
 
         <div className="w-full text-center">
           <p>Your ETH Address</p>
           <pre className="font-bold">{key.data["address"]}</pre>
+          <p className="mt-2 m-auto p-3 w-1/2 text-white bg-red-700 text-xs">Do not use this address with your own funds! This wallet is meant to be a demo! Anything sent to this address may not be recoverable and lost permanently.</p>
         </div>
       </div>
 
