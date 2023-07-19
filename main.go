@@ -140,6 +140,27 @@ func main() {
 			return
 		}
 
+		// Now create a new private key
+		privateKeyId, err := turnkey.Client.CreateEthereumKey(subOrganizationId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		address, err := turnkey.Client.GetEthereumAddress(privateKeyId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		fmt.Printf("Private key successfully created: %s (address: %s)", privateKeyId, address)
+
+		pk, err := models.SavePrivateKeyForUser(user, privateKeyId, address)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		fmt.Printf("Private key successfully saved: %v", pk)
+
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Account successfully created")
 	})
@@ -253,7 +274,7 @@ func endUserSession(ctx *gin.Context) {
 
 func loadDatabase() {
 	db.Connect()
-	db.Database.AutoMigrate(&models.User{}, &models.TurnkeyPrivateKey{})
+	db.Database.AutoMigrate(&models.User{}, &models.PrivateKey{})
 }
 
 func loadEnv() {

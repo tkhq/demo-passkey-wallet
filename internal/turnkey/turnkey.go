@@ -2,7 +2,6 @@ package turnkey
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/tidwall/gjson"
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
 	"github.com/tkhq/go-sdk"
 	"github.com/tkhq/go-sdk/pkg/api/client"
@@ -101,12 +99,8 @@ func (c *TurnkeyApiClient) ForwardSignedRequest(url, requestBody, stamp string, 
 	return res.StatusCode, responseBody, nil
 }
 
-// TODO: update the go SDK to make sure this request type is in!
-// As-is this function is way too brittle and complex.
 func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestation types.Attestation, challenge string) (string, error) {
 	fmt.Printf("Creating sub-org for user %s...\n", userEmail)
-
-	url := "https://" + c.TurnkeyApiHost + "/public/v1/submit/create_sub_organization"
 	sanitizedEmail := strings.ReplaceAll(userEmail, "@", "-at-")
 	sanitizedEmail = strings.ReplaceAll(sanitizedEmail, "+", "-plus-")
 	subOrganizationName := fmt.Sprintf("SubOrg for %s", sanitizedEmail)
@@ -115,86 +109,80 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 		subOrganizationName = subOrganizationName[:255]
 	}
 
-	body := strings.TrimSpace(fmt.Sprintf(`{
-				"type": "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V2",
-				"timestampMs": "%d",
-				"organizationId": %q,
-				"parameters": {
-					"subOrganizationName": %q,
-					"rootUsers": [
+	// TODO: this should accept normal ints!
+	rootQuorumThreshold := int32(1)
+	// TODO: this should be automatically filled based on Param type.
+	activityType := "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V2"
+
+	credentialId := attestation.CredentialId
+	clientDataJson := attestation.ClientDataJson
+	attestationObject := attestation.AttestationObject
+	apiPublicKey := c.APIKey.TkPublicKey
+
+	p := organizations.NewPublicAPIServiceCreateSubOrganizationParams().WithBody(&models.V1CreateSubOrganizationRequest{
+		OrganizationID: &c.OrganizationID,
+		Parameters: &models.V1CreateSubOrganizationIntentV2{
+			RootQuorumThreshold: &rootQuorumThreshold,
+			RootUsers: []*models.V1RootUserParams{
+				{
+					// TODO: why is this a pointer instead of a string? This is a required string.
+					UserName: func() *string { s := "Wallet User"; return &s }(),
+					// TODO: and why is that a straight up string?! This _should_ be optional / a pointer
+					UserEmail: userEmail,
+					APIKeys:   []*models.V1APIKeyParams{},
+					Authenticators: []*models.V1AuthenticatorParamsV2{
 						{
-							"userName": "Wallet User",
-							"userEmail": %q,
-							"apiKeys": [],
-							"authenticators": [{
-								"authenticatorName": "End-User Passkey",
-								"challenge": %q,
-								"attestation": {
-									"credentialId": %q,
-									"clientDataJson": %q,
-									"attestationObject": %q,
-									"transports": ["AUTHENTICATOR_TRANSPORT_HYBRID"]
-								}
-							}]
+							Challenge: &challenge,
+							Attestation: &models.V1Attestation{
+								AttestationObject: &attestationObject,
+								ClientDataJSON:    &clientDataJson,
+								CredentialID:      &credentialId,
+								Transports: []models.Immutablewebauthnv1AuthenticatorTransport{
+									models.Immutablewebauthnv1AuthenticatorTransportAUTHENTICATORTRANSPORTHYBRID,
+								},
+							},
+							AuthenticatorName: func() *string { s := "End-User Passkey"; return &s }(),
 						},
+					},
+				},
+				{
+					UserName:  func() *string { s := "Onboarding Helper"; return &s }(),
+					UserEmail: "",
+					APIKeys: []*models.V1APIKeyParams{
 						{
-							"userName": "Onboarding Helper",
-							"apiKeys": [{
-								"apiKeyName": "Wallet Backend",
-								"publicKey": %q
-							}],
-							"authenticators": []
-						}
-					],
-					"rootQuorumThreshold": 1
-				}
-		}`,
-		time.Now().UnixMilli(),
-		c.OrganizationID,
-		subOrganizationName,
-		userEmail,
-		challenge,
-		attestation.CredentialId,
-		attestation.ClientDataJson,
-		attestation.AttestationObject,
-		c.APIKey.PublicKey,
-	))
+							APIKeyName: func() *string { s := "Wallet Backend"; return &s }(),
+							PublicKey:  &apiPublicKey,
+						},
+					},
+					Authenticators: []*models.V1AuthenticatorParamsV2{},
+				},
+			},
+			SubOrganizationName: &subOrganizationName,
+		},
+		TimestampMs: util.RequestTimestamp(),
+		Type:        &activityType,
+	})
 
-	stamp, err := apikey.Stamp([]byte(body), c.APIKey)
+	response, err := c.Client.Organizations.PublicAPIServiceCreateSubOrganization(p, c.GetAuthenticator())
 	if err != nil {
-		return "", errors.Wrap(err, "failed to generate API stamp")
+		return "", err
+	}
+	if response == nil || response.Payload == nil || response.Payload.Activity == nil || response.Payload.Activity.ID == nil {
+		return "", fmt.Errorf("unable to get activity ID from activity response: %v", response)
 	}
 
-	statusCode, responseBody, err := c.ForwardSignedRequest(url, body, stamp, false)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to forward create-sub-org request")
-	}
-
-	if statusCode != 200 {
-		return "", fmt.Errorf("unsuccessful sub-org create request (status: %d)", statusCode)
-	}
-	var activityResponse models.V1ActivityResponse
-	err = json.Unmarshal([]byte(responseBody), &activityResponse)
-	if err != nil {
-		return "", errors.Wrap(err, "error while decoding activity response")
-	}
-
-	activityId := activityResponse.Activity.ID
-	_, err = c.WaitForResult(c.OrganizationID, *activityId)
-
+	result, err := c.WaitForResult(c.OrganizationID, *response.Payload.Activity.ID)
 	if err != nil {
 		return "", errors.Wrap(err, "error while waiting for activity result")
 	}
-	fmt.Printf("activity %s completed\n", *activityId)
+	fmt.Printf("activity %s completed\n", *response.Payload.Activity.ID)
 
-	// Yiiiikes. TODO: remove this.
-	activityBytes, err := c.GetRawActivityJson(c.OrganizationID, *activityId)
-	if err != nil {
-		return "", errors.Wrap(err, "cannot get raw activity bytes")
+	if result == nil || result.CreateSubOrganizationResult == nil || result.CreateSubOrganizationResult.SubOrganizationID == nil {
+		return "", fmt.Errorf("expected a non-empty CreateSubOrganizationResult. Got: %+v", result)
 	}
-	subOrganizationValue := gjson.Get(string(activityBytes), "activity.result.createSubOrganizationResult.subOrganizationId")
+	subOrganizationId := result.CreateSubOrganizationResult.SubOrganizationID
 
-	return subOrganizationValue.String(), nil
+	return *subOrganizationId, nil
 }
 
 func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte, error) {
@@ -214,21 +202,24 @@ func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte,
 	return data, nil
 }
 
-// Creates a Private Key
-func (c *TurnkeyApiClient) CreatePrivateKey(name string) (string, error) {
+// Creates a new Private Key with an Ethereum address, and returns the Private Key ID.
+func (c *TurnkeyApiClient) CreateEthereumKey(subOrganizationId string) (string, error) {
+	timestamp := util.RequestTimestamp()
+	name := fmt.Sprintf("Ethereum Key - %s", *timestamp)
+
 	p := private_keys.NewPublicAPIServiceCreatePrivateKeysParams().WithBody(&models.V1CreatePrivateKeysRequest{
-		OrganizationID: &c.OrganizationID,
+		OrganizationID: &subOrganizationId,
 		Parameters: &models.V1CreatePrivateKeysIntent{
 			PrivateKeys: []*models.V1PrivateKeyParams{{
 				AddressFormats: []models.Immutableactivityv1AddressFormat{
 					models.Immutableactivityv1AddressFormatADDRESSFORMATETHEREUM,
 				},
 				Curve:          models.Immutableactivityv1CurveCURVESECP256K1.Pointer(),
-				PrivateKeyName: func() *string { return &name }(),
+				PrivateKeyName: &name,
 				PrivateKeyTags: []string{},
 			}},
 		},
-		TimestampMs: util.RequestTimestamp(),
+		TimestampMs: timestamp,
 		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPECREATEPRIVATEKEYS.Pointer()),
 	})
 
@@ -237,7 +228,7 @@ func (c *TurnkeyApiClient) CreatePrivateKey(name string) (string, error) {
 		return "", err
 	}
 
-	result, err := c.WaitForResult(c.OrganizationID, *activityResponse.Payload.Activity.ID)
+	result, err := c.WaitForResult(subOrganizationId, *activityResponse.Payload.Activity.ID)
 	if err != nil {
 		return "", err
 	}
@@ -281,34 +272,6 @@ func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*mo
 	}
 
 	return resp.Payload.Activity.Result, nil
-}
-
-// TODO: this method only has to be there because the SDK isn't up-to-date and the result types don't have "createSubOrganizationResult"
-// Delete once update is done!
-func (c *TurnkeyApiClient) GetRawActivityJson(organizationId, activityId string) ([]byte, error) {
-	url := "https://" + c.TurnkeyApiHost + "/public/v1/query/get_activity"
-
-	body := strings.TrimSpace(fmt.Sprintf(`{
-			"activityId": %q,
-			"organizationId": %q
-		}`,
-		activityId,
-		organizationId,
-	))
-	stamp, err := apikey.Stamp([]byte(body), c.APIKey)
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to generate API stamp")
-	}
-
-	statusCode, responseBody, err := c.ForwardSignedRequest(url, body, stamp, false)
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "failed to forward get activity request")
-	}
-
-	if statusCode != 200 {
-		return []byte{}, fmt.Errorf("unsuccessful sub-org create request (status: %d)", statusCode)
-	}
-	return responseBody, nil
 }
 
 func (c *TurnkeyApiClient) GetAuthenticator() *sdk.Authenticator {
