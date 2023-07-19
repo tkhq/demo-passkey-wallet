@@ -4,7 +4,7 @@ import Image from 'next/image'
 export default async function Home() {
   return (
     <div>
-      <div className="align-center">
+      <div className="align-center bg-gradient-to-t from-zinc-200 rounded-lg">
         <Image
           className="mx-auto align-center"
           src="/turntkey.gif"
@@ -20,13 +20,13 @@ export default async function Home() {
       <div className="mb-32 grid text-center lg:mb-0 lg:mt-8 lg:grid-cols-3 lg:text-left">
         <a
           href="https://turnkey.io"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
           target="_blank"
           rel="noopener noreferrer"
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
             Self-Custodial{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+            <span className="inline-block transition-transform group-hover:translate-x-1">
               -&gt;
             </span>
           </h2>
@@ -37,13 +37,13 @@ export default async function Home() {
 
         <a
           href="https://turnkey.readme.io/reference/getting-started"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
           target="_blank"
           rel="noopener noreferrer"
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
             API-driven{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+            <span className="inline-block transition-transform group-hover:translate-x-1">
               -&gt;
             </span>
           </h2>
@@ -54,7 +54,7 @@ export default async function Home() {
 
         <a
           href="https://github.com/tkhq/demo-passkey-wallet"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
           target="_blank"
           rel="noopener noreferrer"
         >

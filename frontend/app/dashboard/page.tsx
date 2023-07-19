@@ -2,7 +2,7 @@
 
 import { AuthWidget } from '@/components/AuthWidget';
 import { useAuth } from '@/components/context/auth.context';
-import { getKeyUrl, getSubOrganizationUrl, getWalletUrl } from '@/utils/urls';
+import { getSubOrganizationUrl, getWalletUrl } from '@/utils/urls';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
