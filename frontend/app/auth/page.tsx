@@ -174,7 +174,7 @@ async function signup(email: string) {
   return (
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <Image width={400} height={400} className="mx-auto h-32 w-auto" src="/piggybank-logo.png" alt="Demo Passkey Wallet Logo"/>
+        <Image width={200} height={200} className="mx-auto h-32 w-auto" src="/turnkey.svg" alt="Demo Passkey Wallet Logo"/>
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-zinc-900">Create or Access your account</h2>
       </div>
 

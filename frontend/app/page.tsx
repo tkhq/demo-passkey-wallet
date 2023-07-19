@@ -7,7 +7,7 @@ export default async function Home() {
       <div className="align-center">
         <Image
           className="mx-auto align-center"
-          src="/piggybank-logo.png"
+          src="/turntkey.gif"
           alt="Demo Passkey Wallet Logo"
           width={400}
           height={400}
