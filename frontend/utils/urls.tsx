@@ -24,3 +24,7 @@ export function logoutUrl(): string {
 export function getSubOrganizationUrl(): string {
     return BACKEND_API_BASE_URL + "/api/suborganization";
 }
+
+export function getWalletUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet";
+}

@@ -147,7 +147,7 @@ func main() {
 			return
 		}
 
-		address, err := turnkey.Client.GetEthereumAddress(privateKeyId)
+		address, err := turnkey.Client.GetEthereumAddress(subOrganizationId, privateKeyId)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
@@ -219,6 +219,24 @@ func main() {
 			}
 			ctx.Data(http.StatusOK, "application/json", subOrganization)
 		}
+	})
+
+	router.GET("/api/wallet", func(ctx *gin.Context) {
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+		privateKey, err := models.GetPrivateKeyForUser(*user)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"address":     privateKey.EthereumAddress,
+			"turnkeyUuid": privateKey.TurnkeyUUID,
+		})
 	})
 
 	router.Run(":" + port)

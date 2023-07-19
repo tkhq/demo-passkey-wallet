@@ -237,9 +237,9 @@ func (c *TurnkeyApiClient) CreateEthereumKey(subOrganizationId string) (string, 
 }
 
 // Gets the Ethereum address for a private key ID created on Turnkey
-func (c *TurnkeyApiClient) GetEthereumAddress(privateKeyId string) (string, error) {
+func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId string) (string, error) {
 	p := private_keys.NewPublicAPIServiceGetPrivateKeyParams().WithBody(&models.V1GetPrivateKeyRequest{
-		OrganizationID: &c.OrganizationID,
+		OrganizationID: &organizationId,
 		PrivateKeyID:   &privateKeyId,
 	})
 
