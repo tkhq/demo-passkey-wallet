@@ -11,6 +11,7 @@ import { getWebAuthnAssertion } from '@turnkey/http/dist/webauthn';
 import { TPostGetWhoamiInput, federatedPostGetOrganization, federatedPostGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
+import Link from 'next/link';
 
 browserInit({
   baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
@@ -198,6 +199,7 @@ async function signup(email: string) {
           </div>
         </form>
       </div>
+      <Link className="block w-full text-center mt-12" href={"/"}>Go back home</Link>
     </div>
   )
 }

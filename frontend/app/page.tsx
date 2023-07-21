@@ -1,40 +1,23 @@
 import { AuthWidget } from '@/components/AuthWidget'
+import { Nav } from '@/components/Nav'
 import Image from 'next/image'
 
 export default async function Home() {
   return (
     <div>
-      <div className="align-center bg-gradient-to-t from-zinc-200 rounded-lg">
+      <Nav></Nav>
+      <div className="align-center bg-black rounded-lg p-12 mt-8">
         <Image
           className="mx-auto align-center"
-          src="/turntkey.gif"
+          src="/turnkey_logo_white.svg"
           alt="Demo Passkey Wallet Logo"
-          width={400}
-          height={400}
+          width={80}
+          height={140}
           priority
         />
       </div>
 
-      <AuthWidget></AuthWidget>
-
       <div className="mb-32 grid text-center lg:mb-0 lg:mt-8 lg:grid-cols-3 lg:text-left">
-        <a
-          href="https://turnkey.io"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Self-Custodial{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[40ch] text-sm opacity-50`}>
-            We cannot access your keys, cannot access your coins. Turnkey magic.
-          </p>
-        </a>
-
         <a
           href="https://turnkey.readme.io/reference/getting-started"
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
@@ -42,13 +25,30 @@ export default async function Home() {
           rel="noopener noreferrer"
         >
           <h2 className={`mb-3 text-2xl font-semibold`}>
-            API-driven{' '}
+            Non-Custodial{' '}
             <span className="inline-block transition-transform group-hover:translate-x-1">
               -&gt;
             </span>
           </h2>
           <p className={`m-0 max-w-[40ch] text-sm opacity-50`}>
-            Piggy bank creates an isolated Sub-Organization where you are the root user. Private keys are yours. Check out the API reference for more details.
+            Only you can access your keys. Checkout our API-reference for more details.
+          </p>
+        </a>
+
+        <a
+          href="https://turnkey.io"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className={`mb-3 text-2xl font-semibold`}>
+            Passwordless{' '}
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              -&gt;
+            </span>
+          </h2>
+          <p className={`m-0 max-w-[40ch] text-sm opacity-50`}>
+            We use Passkeys to offer the best user experience and security in one. Learn more.
           </p>
         </a>
 

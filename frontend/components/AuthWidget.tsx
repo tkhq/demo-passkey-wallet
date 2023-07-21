@@ -8,6 +8,8 @@ import { useSWRConfig } from 'swr';
 export function AuthWidget() {
     const router = useRouter();
     const { mutate } = useSWRConfig()
+    const { state } = useAuth()
+    const pathName = usePathname()
 
     const handleLogout = async () => {
         if (confirm("You are about to log out. Continue?") === true) {
@@ -24,32 +26,29 @@ export function AuthWidget() {
         }
     }
 
-    const { state } = useAuth()
-
-    const pathname = usePathname();
     if (state.isLoaded) {
         if (state.isLoggedIn === true) {
-            return <div className="mb-12 lg:min-w-[250px] lg:absolute lg:top-0 lg:right-48 lg:z-10 text-center">
-                <p className="mt-5 text-xs leading-5 text-zinc-600">Logged in as {state.email}</p>
+            return <div className="text-right pt-1">
                 {
-                    pathname !== "/dashboard" ?
-                    <a href="/dashboard" className="mt-10 lg:mt-1 inline-block w-full lg:w-5/12 lg:mr-2 rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    pathName !== "/dashboard" ?
+                    <a href="/dashboard" className="inline-block rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                         Dashboard
                     </a>
                     : ''
                 }
-                <button onClick={handleLogout} className="mt-2 lg:mt-1 inline-block w-full lg:w-5/12 rounded-md bg-red-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                    Log Out
+                <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    Sign out
                 </button>
+                <p className="mt-2 text-xs leading-5 text-zinc-600">Signed in as {state.email}</p>
             </div>;
         } else {
-            return <div className="mb-12 lg:absolute lg:top-0 lg:right-48 lg:z-10">
-                <a href="/auth" className="mt-11 block w-full rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Log In</a>
+            return <div className="mt-2 text-right">
+                <a href="/auth" className="inline-block rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:transparency:75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign In</a>
             </div>
         }
     } else {
-        return <div className="mb-12 lg:absolute lg:top-0 lg:right-48 lg:z-10">
-        <p className="mt-11 block w-full px-3 py-2 text-center text-sm">Loading...</p>
+        return <div className="mt-2 text-right font-bold">
+        <p className="inline-block px-3 py-2 text-center text-sm">Loading...</p>
     </div>
     }
  }

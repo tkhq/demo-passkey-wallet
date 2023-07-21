@@ -1,11 +1,13 @@
 'use client'
 
 import { AuthWidget } from '@/components/AuthWidget';
+import { Nav } from '@/components/Nav';
 import { useAuth } from '@/components/context/auth.context';
 import { getSubOrganizationUrl, getWalletUrl } from '@/utils/urls';
 import axios from 'axios';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { MouseEventHandler, useEffect } from 'react';
 import useSWR from 'swr';
 
 type resource = {
@@ -30,7 +32,6 @@ async function resourceFetcher(url: string): Promise<resource> {
 export default function Dashboard() {
   const { state } = useAuth();
   const router = useRouter();
-  const { data: subOrganization, error: subOrganizationError } = useSWR(getSubOrganizationUrl(), resourceFetcher)
   const { data: key, error: keyError } = useSWR(getWalletUrl(), resourceFetcher)
 
   useEffect(() => {
@@ -41,35 +42,46 @@ export default function Dashboard() {
     }
   }, [state, router])
 
-  if (subOrganizationError || keyError) return <div>Failed to load the dashboard</div>;
-  if (!subOrganization || !key) return <div>Loading...</div>;
+  const handleDropClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
+    e.preventDefault();
+    alert("Not working yet. Sorry!");
+  }
+
+  if (keyError) return <div>Failed to load the dashboard</div>;
+  if (!key) return <div>Loading...</div>;
 
   return (
     <div>
-      <AuthWidget></AuthWidget>
-      <h2 className="text-xl border text-center rounded-md flex-none mt-8 p-4 bg-zinc-900 text-white tracking-wider uppercase">Dashboard</h2>
-      <div className="mb-32 grid lg:mb-0 lg:mt-8 lg:flex max-w-5xl">
+      <Nav></Nav>
+      <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
+        <div className="col-span-2">
+          <h3 className="text-xl font-medium">Ethereum Network</h3>
+          <p className="text-destructive-red text-sm mt-1">
+            This address is for demo purposes only. Anything sent to this address may be lost permanently.
+          </p>
+        </div>
 
-        <div className="w-full text-center">
-          <p>Your ETH Address</p>
-          <pre className="font-bold">{key.data["address"]}</pre>
-          <p className="mt-2 m-auto p-3 w-1/2 text-white bg-red-700 text-xs">Do not use this address with your own funds! This wallet is meant to be a demo! Anything sent to this address may not be recoverable and lost permanently.</p>
+        <div className="col-auto col-span-3 bg-subtle-accent p-4 text-sm rounded-sm">
+          <p className="mb-4">
+            <span className="font-semibold mr-2">Address:</span>
+            <span className="font-mono">{key.data["address"]}</span>
+          </p>
+          <p>
+            <span className="font-semibold mr-2">Balance:</span>
+            <span>0.00 Sepolia ETH</span><br/>
+            <a className="text-indigo-600 cursor-pointer" onClick={handleDropClick}>Fund my wallet (10 clicks remaining)</a>
+          </p>
         </div>
       </div>
 
-      <div className="mb-32 grid lg:mb-0 lg:mt-8 lg:flex max-w-5xl">
-        <p className="text-md flex-none lg:w-1/3 p-8">
-          Did you know? You are the owner of a completely independent Turnkey sub-organization.
-          <br />
-          <br />
-          Here it is, in its entirety &rarr;
-        </p>
-
-        <div className="w-full flex-1">
-          <pre className="w-full text-xs whitespace-pre-wrap break-all p-8">
-            {JSON.stringify(subOrganization, null, 4)}
-          </pre>
-        </div>
+      <div className="text-zinc-500 text-center font-semibold">
+        <Link className="underline hover:font-bold" target="_blank" href={"https://turnkey.readme.io/reference/getting-started"} title="Ready to build?">
+          Documentation
+        </Link>
+        {' '}|{' '}
+        <Link className="underline hover:font-bold" target="_blank" href={getSubOrganizationUrl()} title="Did you know? You are the owner of a completely independent Turnkey Sub-Organization!">
+          Sub-Org Details
+        </Link>
       </div>
     </div>
   )
