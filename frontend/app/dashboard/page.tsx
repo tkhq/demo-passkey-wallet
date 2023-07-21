@@ -47,8 +47,9 @@ export default function Dashboard() {
     alert("Not working yet. Sorry!");
   }
 
-  if (keyError) return <div>Failed to load the dashboard</div>;
-  if (!key) return <div>Loading...</div>;
+  if (keyError) {
+    console.error("failed to load wallet information:", keyError)
+  };
 
   return (
     <div>
@@ -64,11 +65,11 @@ export default function Dashboard() {
         <div className="col-auto col-span-3 bg-subtle-accent p-4 text-sm rounded-sm">
           <p className="mb-4">
             <span className="font-semibold mr-2">Address:</span>
-            <span className="font-mono">{key.data["address"]}</span>
+            <span className="font-mono">{key && key.data["address"]}</span>
           </p>
           <p>
             <span className="font-semibold mr-2">Balance:</span>
-            <span>0.00 Sepolia ETH</span><br/>
+            <span>{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span><br/>
             <a className="text-indigo-600 cursor-pointer" onClick={handleDropClick}>Fund my wallet (10 clicks remaining)</a>
           </p>
         </div>

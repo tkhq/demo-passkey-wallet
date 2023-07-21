@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 	"github.com/tkhq/demo-passkey-wallet/internal/db"
+	"github.com/tkhq/demo-passkey-wallet/internal/ethereum"
 	"github.com/tkhq/demo-passkey-wallet/internal/models"
 	"github.com/tkhq/demo-passkey-wallet/internal/turnkey"
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
@@ -50,6 +52,7 @@ func ginErrorLogMiddleware(c *gin.Context) {
 func main() {
 	loadEnv()
 	loadDatabase()
+	ethereum.Init()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -233,13 +236,25 @@ func main() {
 			return
 		}
 
+		balance, err := ethereum.GetBalance(privateKey.EthereumAddress)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve balance").Error())
+			return
+		}
+
 		ctx.JSON(http.StatusOK, map[string]interface{}{
 			"address":     privateKey.EthereumAddress,
 			"turnkeyUuid": privateKey.TurnkeyUUID,
+			"balance":     formatBalance(balance),
 		})
 	})
 
 	router.Run(":" + port)
+}
+
+func formatBalance(balance *big.Int) string {
+	b := big.NewRat(balance.Int64(), int64(1000000000000000000))
+	return b.FloatString(2)
 }
 
 func getCurrentUser(ctx *gin.Context) *models.User {
