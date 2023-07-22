@@ -236,6 +236,35 @@ func (c *TurnkeyApiClient) CreateEthereumKey(subOrganizationId string) (string, 
 	return result.CreatePrivateKeysResult.PrivateKeyIds[0], nil
 }
 
+// Takes an unsigned ETH payload and tries to sign it.
+// On success, the signed transaction is returned. On failure, an error is returned.
+func (c *TurnkeyApiClient) SignTransaction(organizationId string, privateKeyId string, unsignedTransaction string) (string, error) {
+	timestamp := util.RequestTimestamp()
+
+	p := private_keys.NewPublicAPIServiceSignTransactionParams().WithBody(&models.V1SignTransactionRequest{
+		OrganizationID: &organizationId,
+		Parameters: &models.V1SignTransactionIntent{
+			PrivateKeyID:        &privateKeyId,
+			Type:                models.Immutableactivityv1TransactionTypeTRANSACTIONTYPEETHEREUM.Pointer(),
+			UnsignedTransaction: &unsignedTransaction,
+		},
+		TimestampMs: timestamp,
+		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPESIGNTRANSACTION.Pointer()),
+	})
+
+	activityResponse, err := c.Client.PrivateKeys.PublicAPIServiceSignTransaction(p, c.GetAuthenticator())
+	if err != nil {
+		return "", err
+	}
+
+	result, err := c.WaitForResult(organizationId, *activityResponse.Payload.Activity.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return *result.SignTransactionResult.SignedTransaction, nil
+}
+
 // Gets the Ethereum address for a private key ID created on Turnkey
 func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId string) (string, error) {
 	p := private_keys.NewPublicAPIServiceGetPrivateKeyParams().WithBody(&models.V1GetPrivateKeyRequest{

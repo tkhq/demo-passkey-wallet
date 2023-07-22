@@ -15,14 +15,6 @@ type User struct {
 	SubOrganizationId sql.NullString `gorm:"size:255;unique;default:null" json:"subOrganizationId"`
 }
 
-func (user *User) Save() (*User, error) {
-	err := db.Database.Create(&user).Error
-	if err != nil {
-		return &User{}, err
-	}
-	return user, nil
-}
-
 func CreateUser(email string) (*User, error) {
 	if email == "" {
 		return nil, errors.New("expected non-empty email to create user")
@@ -31,7 +23,12 @@ func CreateUser(email string) (*User, error) {
 	user := User{
 		Email: email,
 	}
-	return user.Save()
+
+	err := db.Database.Create(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func FindUserByEmail(email string) (User, error) {

@@ -2,15 +2,18 @@ package ethereum
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var Client *ethclient.Client
@@ -38,14 +41,14 @@ func GetBalance(addressString string) (*big.Int, error) {
 	return balance, nil
 }
 
-func ConstructTransfer(from string, to string, amount *big.Int) (*types.Transaction, error) {
+func ConstructTransfer(from string, to string, amount *big.Int) ([]byte, error) {
 	ctx := context.Background()
 	fromAddress := parseAddress(from)
 	toAddress := parseAddress(to)
 
 	nonce, err := Client.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot fetch nonce for address %s", from)
+		return []byte{}, errors.Wrapf(err, "cannot fetch nonce for address %s", from)
 	}
 
 	gasLimit := uint64(21000)
@@ -54,7 +57,7 @@ func ConstructTransfer(from string, to string, amount *big.Int) (*types.Transact
 	// maxFeePerGas = 20 Gwei
 	feeCap := big.NewInt(20000000000)
 
-	return types.NewTx(&types.DynamicFeeTx{
+	return messageToSign(types.NewTx(&types.DynamicFeeTx{
 		ChainID:   params.SepoliaChainConfig.ChainID,
 		Nonce:     nonce,
 		GasFeeCap: feeCap,
@@ -63,20 +66,53 @@ func ConstructTransfer(from string, to string, amount *big.Int) (*types.Transact
 		To:        &toAddress,
 		Value:     amount,
 		Data:      []byte{},
-	}), nil
+	})), nil
 }
 
 // Broadcasts a signed transaction and returns the transaction hash.
 // (or an error if something goes awry)
-func BroadcastTransaction(signedTx *types.Transaction) (string, error) {
-	err := Client.SendTransaction(context.Background(), signedTx)
+// This function expects a hex-encoded string as input.
+func BroadcastTransaction(signedTx string) (string, error) {
+	signedTxBytes, err := hex.DecodeString(signedTx)
+	if err != nil {
+		return "", errors.Wrapf(err, "cannot decode signed tx %s", signedTx)
+	}
+
+	tx := new(types.Transaction)
+	err = tx.UnmarshalBinary(signedTxBytes)
+	if err != nil {
+		return "", errors.Wrap(err, "cannot parse signed transaction bytes")
+	}
+
+	err = Client.SendTransaction(context.Background(), tx)
 	if err != nil {
 		return "", errors.Wrap(err, "error while broadcasting transaction")
 	}
 
-	return signedTx.Hash().Hex(), nil
+	return tx.Hash().Hex(), nil
 }
 
 func parseAddress(s string) common.Address {
 	return common.BytesToAddress(common.FromHex(s))
+}
+
+// See https://github.com/ethereum/go-ethereum/issues/26199#issuecomment-1318777575
+// Unfortunately go-ethereum does not make it easy to get the message to sign.
+func messageToSign(unsignedTx *types.Transaction) []byte {
+	innerRLP, _ := rlp.EncodeToBytes(
+		[]interface{}{
+			unsignedTx.ChainId(),
+			unsignedTx.Nonce(),
+			unsignedTx.GasTipCap(),
+			unsignedTx.GasFeeCap(),
+			unsignedTx.Gas(),
+			unsignedTx.To(),
+			unsignedTx.Value(),
+			unsignedTx.Data(),
+			unsignedTx.AccessList(),
+		},
+	)
+	messageToSign := []byte{unsignedTx.Type()}
+	messageToSign = append(messageToSign, innerRLP...)
+	return messageToSign
 }

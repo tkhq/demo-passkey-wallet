@@ -1,10 +1,12 @@
 'use client'
 
 import { AuthWidget } from '@/components/AuthWidget';
+import { Drop } from '@/components/Drop';
 import { Nav } from '@/components/Nav';
 import { useAuth } from '@/components/context/auth.context';
 import { getSubOrganizationUrl, getWalletUrl } from '@/utils/urls';
 import axios from 'axios';
+import { Underdog } from 'next/font/google';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MouseEventHandler, useEffect } from 'react';
@@ -32,7 +34,7 @@ async function resourceFetcher(url: string): Promise<resource> {
 export default function Dashboard() {
   const { state } = useAuth();
   const router = useRouter();
-  const { data: key, error: keyError } = useSWR(getWalletUrl(), resourceFetcher)
+  const { data: key, error: keyError, isValidating: isRefetchingKey } = useSWR(getWalletUrl(), resourceFetcher, { refreshInterval: 4000 })
 
   useEffect(() => {
     if (state.isLoaded === true && state.isLoggedIn === false) {
@@ -41,11 +43,6 @@ export default function Dashboard() {
       return
     }
   }, [state, router])
-
-  const handleDropClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
-    e.preventDefault();
-    alert("Not working yet. Sorry!");
-  }
 
   if (keyError) {
     console.error("failed to load wallet information:", keyError)
@@ -66,11 +63,19 @@ export default function Dashboard() {
           <p className="mb-4">
             <span className="font-semibold mr-2">Address:</span>
             <span className="font-mono">{key && key.data["address"]}</span>
+            <br/>
+            {key ? <Link className="text-indigo-600 cursor-pointer" target="_blank" href={"https://sepolia.etherscan.io/address/" + key.data["address"]}>View on Etherscan &#128279;</Link> : null }
           </p>
           <p>
             <span className="font-semibold mr-2">Balance:</span>
-            <span>{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span><br/>
-            <a className="text-indigo-600 cursor-pointer" onClick={handleDropClick}>Fund my wallet (10 clicks remaining)</a>
+            <span>{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>
+            <br/>
+
+            { key && key.data["dropsLeft"] !== undefined ? 
+              <Drop dropsLeft={key.data["dropsLeft"] as number}></Drop>
+              : null
+            }
+
           </p>
         </div>
       </div>

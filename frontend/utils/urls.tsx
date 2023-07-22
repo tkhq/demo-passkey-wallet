@@ -28,3 +28,7 @@ export function getSubOrganizationUrl(): string {
 export function getWalletUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet";
 }
+
+export function dropUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/drop"
+}

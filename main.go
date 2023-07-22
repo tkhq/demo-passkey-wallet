@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -26,6 +27,8 @@ import (
 const SESSION_NAME = "demo_session"
 const SESSION_SALT = "demo_session_salt"
 const SESSION_USER_ID_KEY = "user_id"
+
+const DROP_AMOUNT_IN_WEI = 50000000000000000
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
@@ -88,8 +91,19 @@ func main() {
 
 	userID, err := turnkey.Client.Whoami()
 	if err != nil {
-		log.Fatalf("Unable to initialize Turnkey client: %+v", err)
+		log.Fatalf("Unable to use Turnkey client for whoami request: %+v", err)
 	}
+
+	turnkeyWarchestOrganizationId := os.Getenv("TURNKEY_WARCHEST_ORGANIZATION_ID")
+	turnkeyWarchestPrivateKeyId := os.Getenv("TURNKEY_WARCHEST_PRIVATE_KEY_ID")
+	if turnkeyWarchestOrganizationId == "" || turnkeyWarchestPrivateKeyId == "" || err != nil {
+		log.Fatal("Cannot find configuration for Turnkey Warchest org or private key ID! Drop functionality depends on it")
+	}
+	turnkeyWarchestPrivateKeyAddress, err := turnkey.Client.GetEthereumAddress(turnkeyWarchestOrganizationId, turnkeyWarchestPrivateKeyId)
+	if err != nil {
+		log.Fatalf("Unable to get Turnkey Warchest address: %s", err.Error())
+	}
+
 	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
 	router.GET("/", func(ctx *gin.Context) {
@@ -246,12 +260,59 @@ func main() {
 			"address":     privateKey.EthereumAddress,
 			"turnkeyUuid": privateKey.TurnkeyUUID,
 			"balance":     formatBalance(balance),
+			"dropsLeft":   privateKey.DropsLeft(),
+		})
+	})
+
+	router.POST("api/wallet/drop", func(ctx *gin.Context) {
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+		privateKey, err := models.GetPrivateKeyForUser(*user)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
+			return
+		}
+
+		if privateKey.DropsLeft() <= 0 {
+			ctx.String(http.StatusForbidden, "No more drops left!")
+			return
+		}
+
+		unsignedDropTx, err := ethereum.ConstructTransfer(turnkeyWarchestPrivateKeyAddress, privateKey.EthereumAddress, big.NewInt(DROP_AMOUNT_IN_WEI))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct drop transfer").Error())
+			return
+		}
+
+		signedDropTx, err := turnkey.Client.SignTransaction(turnkeyWarchestOrganizationId, turnkeyWarchestPrivateKeyId, hex.EncodeToString(unsignedDropTx))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to sign drop transfer").Error())
+			return
+		}
+
+		txHash, err := ethereum.BroadcastTransaction(signedDropTx)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to broadcast drop transfer").Error())
+		}
+
+		err = models.RecordDropForPrivateKey(privateKey)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to persist drop in DB").Error())
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"hash": txHash,
 		})
 	})
 
 	router.Run(":" + port)
 }
 
+// Transform a bigint (representing a wei amount) into a readable
+// string ("1.23") representing an amount in ETH.
 func formatBalance(balance *big.Int) string {
 	b := big.NewRat(balance.Int64(), int64(1000000000000000000))
 	return b.FloatString(2)
