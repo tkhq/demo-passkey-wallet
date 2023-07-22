@@ -20,12 +20,12 @@ export function Drop(props: DropProps) {
                     console.error("error while attempting to drop!", res);
                     setDropping(false)
                 } else {
-                    // Success! Wait 4s then make sure we invalidate the wallet info
+                    // Success! Wait 6s then make sure we invalidate the wallet info
                     // (this will cause components to refresh balances)
                     setTimeout(() => {
                         mutate(getWalletUrl())
                         setDropping(false)
-                    }, 4000)
+                    }, 6000)
                 }
             }
         }
