@@ -31,7 +31,7 @@ export function Drop(props: DropProps) {
         }
         
         startDrop();
-    }, [dropping])
+    }, [dropping, mutate])
 
     if (props.dropsLeft == 0) {
         return <span>No more drops left! 😭</span>

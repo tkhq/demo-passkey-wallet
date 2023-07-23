@@ -155,7 +155,7 @@ export default function Dashboard() {
             <h3 className="text-xl font-medium">To address</h3>
             <p className="text-sm mt-1">
               Enter the destination for your transaction.<br/>
-              Feeling generous? Send back to Turnkey's faucet address (leave this input alone)
+              Feeling generous? Send back to Turnkey&apos;s faucet address (leave this input alone)
             </p>
           </div>
 
