@@ -1,17 +1,55 @@
 # Demo Passkey Wallet
 
-This repo contains a sample application with a frontend and backend component to onboard users through passkeys. Passkey signatures are used for registration and authentication. The backend component forwards these signatures to [Turnkey](https://turnkey.io).
+This repo contains a sample wallet application showing how users can be registered and authenticated with [passkeys](https://www.passkeys.io/). Passkey signatures are used for registration and authentication. The backend component forwards these signatures to [Turnkey](https://turnkey.io).
 
-Under the hood each user registering their passkey results in a new Turnkey sub-organizationn. The crypto keys are user-owned, and operations are user-directed. The frontend, backend, or Turnkey itself do not have the ability to move funds or take action on these sub-organizations.
+<img src="./img/homepage-screenshot.png" alt="homepage screenshot" width="800px">
 
-These sub-organizations roll up to a single parent organization. The parent organization has **read-access** to all sub-organizations, but no ability to perform activities (e.g. signatures, user creation, etc). Learn more about Turnkey Activities [in our documentation](https://turnkey.readme.io/reference/key-concepts-1#activities).
 
-## Tech Stack
+## How it works
 
-* The frontend is a simple NextJS app deployed with Vercel. The frontend uses the [Turnkey JS SDK](https://github.com/tkhq/sdk) to power passkey interactions.
-* The backend is a gin webapp serving JSON endpoints, deployed with Heroku. It uses the [Turnkey Golang SDK](https://github.com/tkhq/go-sdk) to interact with the Turnkey API.
+This application has two components:
+* the frontend (in [`frontend`](./frontend/)) is a NextJS app running in browsers. Responsibilities are: serve the UI, make calls to the backend component, and execute passkey interactions (assertions or attestations). Passkey interactions are abstracted through [Turnkey JS SDK](https://github.com/tkhq/sdk). This is deployed through [Vercel](https://vercel.com/).
+* the backend (main file: [`main.go`](./main.go)) is a Golang application handling requests made by the frontend. It uses the [Turnkey Golang SDK](https://github.com/tkhq/go-sdk) to interact with the Turnkey API. For deployment we use [Heroku](https://www.heroku.com/).
 
-Read on for more technical details.
+Requests and responses use JSON-over-HTTP. Now let's talk about the different flows implemented, one-by-one.
+
+### Registration
+
+The frontend uses a `whoami` endpoint to know whether a user has a current valid session. If not, the user needs to authenticate with a passkey. Let's pretend our user has never registered before: no previous session, no registered passkey!
+
+When authentication happens, the email address entered in the authentication form is used to lookup users on the backend. Because the user is not found, the frontend performs a Webauthn registration ceremony with [Turnkey SDK](https://github.com/tkhq/sdk)'s `getWebAuthnAttestation` method: 
+
+<img src="./img/registration-screenshot.png" alt="registration dialog" width="400px">
+
+The collected credentials are used as parameters to the Turnkey API to create a new Turnkey Sub-Organization. Each user registering their passkey has their own Turnkey Sub-Organization under the hood. The parent organization has **read-only access** to each sub-organization, but cannot modify its content or sign crypto transactions.
+
+### Signing In
+
+Assuming a user is registered already, they will see a different prompt in their browser's native UI. Here's the authentication prompt in Chrome:
+
+<img src="./img/authentication-screenshot.png" alt="authentication dialog" width="400px">
+
+Once again, the frontend doesn't have to know anything about webauthn: it uses the Turnkey SDK method `getWebAuthnAssertion` to collect a signature from the user for a Turnkey "whoami" request for their sub-organization.
+
+The backend then forwards this signed request to Turnkey. If the request is successful, then it means the user is indeed the owner of this sub-organization, and the backend grants a session as a result. The user is logged in!
+
+### Faucet functionality
+
+For convenience, this demo wallet has functionality to drop Sepolia ETH into wallet addresses. The faucet is itself a Turnkey organization, and the backend uses its API key to sign transfers from the faucet Turnkey organization to arbitrary addresses. Something to note: the faucet organization uses Policies to restrict what this Demo Wallet API key can do. The only thing it can do is sign transactions ("DPK" is short for "Demo Passkey Wallet"):
+
+<img src="./img/faucet-org-policy.png" alt="policy allowing DPK API key to sign" width="800px">
+
+### Send functionality
+
+For a signed-in user, the dashboard shows functionality to transfer Sepolia ETH to an arbitrary address. The amount and destination parameters are POSTed to the backend, the backend constructs an unsigned payload, and the frontend uses this to construct a Turnkey Sign Transaction request. This request is signed via a webauthn assertion (remember, end-users are the only ones able to perform any action in their respective sub-organization!), and forwarded to backend. The backend forwards the request to Turnkey, grabs the signed payload in the result, and broadcasts it using Infura.
+
+In other words, this is a 4-step process:
+1. The frontend uses the backend endpoint to construct a transaction and requests a passkey signature
+2. The user uses their passkey to sign
+3. The signed request is forwarded to Turnkey, via the backend API
+4. The request is verified and executed by Turnkey using [Nitro enclaves](https://aws.amazon.com/ec2/nitro/nitro-enclaves/)
+
+<img src="./img/passkey-signature-flow.png" alt="passkey signature flow" width="1000px">
 
 ## Running locally
 
