@@ -141,7 +141,7 @@ export default function Dashboard() {
             <br/>
 
             { key && key.data["dropsLeft"] !== undefined ? 
-              <Drop dropsLeft={key.data["dropsLeft"] as number}></Drop>
+              <Drop dropsLeft={key.data["dropsLeft"] as number} setTxHash={setTxHash}></Drop>
               : null
             }
 

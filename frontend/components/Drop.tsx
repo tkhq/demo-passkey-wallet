@@ -1,11 +1,12 @@
 'use client'
 import axios from 'axios';
-import { dropUrl, getWalletUrl, logoutUrl, whoamiUrl } from '@/utils/urls';
+import { dropUrl } from '@/utils/urls';
 import { useSWRConfig } from 'swr';
-import { useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 interface DropProps {
-    dropsLeft: number
+    dropsLeft: number,
+    setTxHash: Dispatch<SetStateAction<string>>
 }
 
 export function Drop(props: DropProps) {
@@ -20,12 +21,10 @@ export function Drop(props: DropProps) {
                     console.error("error while attempting to drop!", res);
                     setDropping(false)
                 } else {
-                    // Success! Wait 6s then make sure we invalidate the wallet info
-                    // (this will cause components to refresh balances)
                     setTimeout(() => {
-                        mutate(getWalletUrl())
+                        props.setTxHash(res.data["hash"])
                         setDropping(false)
-                    }, 6000)
+                    }, 1500)
                 }
             }
         }
