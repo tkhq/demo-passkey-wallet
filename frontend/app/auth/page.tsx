@@ -185,7 +185,7 @@ async function signup(email: string) {
           <div>
             <label htmlFor="email" className="block text-sm font-medium leading-6 text-zinc-900">Email address</label>
             <div className="mt-2">
-              <input {...subOrgFormRegister("email")} id="email" name="email" type="email" autoComplete="email" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6"/>
+              <input {...subOrgFormRegister("email")} disabled={disabledSubmit} id="email" name="email" type="email" autoComplete="email" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
             </div>
           </div>
 
