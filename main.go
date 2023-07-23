@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -29,6 +30,7 @@ const SESSION_SALT = "demo_session_salt"
 const SESSION_USER_ID_KEY = "user_id"
 
 const DROP_AMOUNT_IN_WEI = 50000000000000000
+const ONE_ETH_IN_WEI = int64(1000000000000000000)
 
 type bodyLogWriter struct {
 	gin.ResponseWriter
@@ -136,7 +138,7 @@ func main() {
 	router.POST("/api/register", func(ctx *gin.Context) {
 		var requestBody types.RegistrationRequest
 		if err := ctx.BindJSON(&requestBody); err != nil {
-			ctx.JSON(http.StatusInternalServerError, err.Error())
+			ctx.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -185,12 +187,10 @@ func main() {
 	router.POST("/api/authenticate", func(ctx *gin.Context) {
 		var req types.AuthenticationRequest
 		if err := ctx.BindJSON(&req); err != nil {
-			ctx.JSON(http.StatusInternalServerError, err.Error())
+			ctx.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		fmt.Printf("Forwarding: %s, %s, %s\n", req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
-		// var decodedStamp map[string]interface{}
-		// err = json.Unmarshal([]byte(req.SignedWhoamiRequest.Stamp), &decodedStamp)
+
 		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp, true)
 		if err != nil {
 			err = errors.Wrap(err, "error while forwarding signed whoami request")
@@ -308,13 +308,97 @@ func main() {
 		})
 	})
 
+	// This handler builds a valid Ethereum transaction from the params passed in.
+	// Aside from checking for a valid session, nothing "stateful" happens here.
+	// We could (potentially!) even open this as a public endpoint. No real security risk.
+	// But we need to authenticate users to retrieve their private key and associated address.
+	router.POST("api/wallet/construct-tx", func(ctx *gin.Context) {
+		var params types.ConstructTxParams
+		err := ctx.BindJSON(&params)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+
+		privateKey, err := models.GetPrivateKeyForUser(*user)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
+			return
+		}
+
+		amount, err := strconv.ParseFloat(params.Amount, 64)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, errors.Wrapf(err, "unable to convert amount (%q) to float", params.Amount).Error())
+			return
+		}
+
+		unsignedTransaction, err := ethereum.ConstructTransfer(privateKey.EthereumAddress, params.Destination, big.NewInt(int64(amount*float64(ONE_ETH_IN_WEI))))
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct transaction").Error())
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"unsignedTransaction": hex.EncodeToString(unsignedTransaction),
+			"privateKeyId":        privateKey.TurnkeyUUID,
+			"organizationId":      user.SubOrganizationId.String,
+		})
+	})
+
+	router.POST("/api/wallet/send-tx", func(ctx *gin.Context) {
+		var params types.SendTxParams
+		err := ctx.BindJSON(&params)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+
+		status, responseBytes, err := turnkey.Client.ForwardSignedRequest(
+			params.SignedSendTx.Url, params.SignedSendTx.Body, params.SignedSendTx.Stamp, true)
+
+		if err != nil {
+			err = errors.Wrap(err, "error while forwarding signed send transaction request")
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if status != 200 {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("expected 200 when forwarding signed transaction request. Got %d", status))
+			return
+		}
+
+		signedTransaction := gjson.Get(string(responseBytes), "activity.result.signTransactionResult.signedTransaction").String()
+
+		hash, err := ethereum.BroadcastTransaction(signedTransaction)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", signedTransaction))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"hash": hash,
+		})
+	})
+
 	router.Run(":" + port)
 }
 
 // Transform a bigint (representing a wei amount) into a readable
 // string ("1.23") representing an amount in ETH.
 func formatBalance(balance *big.Int) string {
-	b := big.NewRat(balance.Int64(), int64(1000000000000000000))
+	b := big.NewRat(balance.Int64(), ONE_ETH_IN_WEI)
 	return b.FloatString(2)
 }
 

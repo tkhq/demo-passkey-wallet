@@ -4,13 +4,19 @@ import { BroadcastBanner } from '@/components/BroadcastBanner';
 import { Drop } from '@/components/Drop';
 import { Nav } from '@/components/Nav';
 import { useAuth } from '@/components/context/auth.context';
-import { getSubOrganizationUrl, getWalletUrl } from '@/utils/urls';
+import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
+import { browserInit } from '@turnkey/http';
+import { TPostSignTransactionInput, federatedPostSignTransaction } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
+
+browserInit({
+  baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+});
 
 type resource = {
   data: any,
@@ -56,11 +62,53 @@ export default function Dashboard() {
 
   async function sendFormHandler (data: sendFormData) {
     setDisabledSubmit(true)
-    setTimeout(() => {
-      console.log("done")
+
+    const constructRes = await axios.post(constructTxUrl(), {
+      amount: data.amount,
+      destination: data.destination,
+    }, { withCredentials: true });
+
+    if (constructRes.status === 200) {
+      console.log("Successfully constructed tx: ", constructRes.data["unsignedTransaction"]);
+    } else {
+      const msg = `Unexpected response: ${constructRes.status}: ${constructRes.data}`;
+      console.error(msg)
+      alert(msg)
       setDisabledSubmit(false)
-      setTxHash("blabl")
-    }, 2000)
+      return
+    }
+
+    // Now let's sign this!
+    const signTransactionInput: TPostSignTransactionInput = {
+      body: {
+        type: "ACTIVITY_TYPE_SIGN_TRANSACTION",
+        organizationId: constructRes.data["organizationId"],
+        timestampMs: Date.now().toString(),
+        parameters: {
+          privateKeyId: constructRes.data["privateKeyId"],
+          unsignedTransaction: constructRes.data["unsignedTransaction"],
+          type: "TRANSACTION_TYPE_ETHEREUM"
+        }
+      }
+    }
+    const signedRequest = await federatedPostSignTransaction(signTransactionInput);
+
+    const sendRes = await axios.post(sendTxUrl(), {
+      signedSendTx: signedRequest,
+      destination: data.destination,
+    }, { withCredentials: true });
+
+    if (sendRes.status === 200) {
+      console.log("Successfully sent! Hash", sendRes.data["hash"]);
+      setTxHash(sendRes.data["hash"])
+    } else {
+      const msg = `Unexpected response: ${sendRes.status}: ${sendRes.data}`;
+      console.error(msg)
+      alert(msg)
+      setDisabledSubmit(false)
+      return
+    }
+    setDisabledSubmit(false)
   };
 
   if (keyError) {

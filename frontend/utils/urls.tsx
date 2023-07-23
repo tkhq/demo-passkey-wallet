@@ -33,6 +33,10 @@ export function dropUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/drop"
 }
 
-export function sendUrl(): string {
-    return BACKEND_API_BASE_URL + "/api/wallet/send"
+export function constructTxUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/construct-tx"
+}
+
+export function sendTxUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/send-tx"
 }
