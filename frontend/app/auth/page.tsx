@@ -1,14 +1,13 @@
 'use client'
 
 import Image from 'next/image'
-import { FederatedRequest, browserInit, getWebAuthnAttestation } from '@turnkey/http'
+import { browserInit, getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { authenticateUrl, registerUrl, registrationStatusUrl, whoamiUrl } from "../../utils/urls"
-import { AuthConsumer, useAuth } from '@/components/context/auth.context';
+import { useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
-import { getWebAuthnAssertion } from '@turnkey/http/dist/webauthn';
-import { TPostGetWhoamiInput, federatedPostGetOrganization, federatedPostGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
+import { TPostGetWhoamiInput, federatedPostGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import Link from 'next/link';

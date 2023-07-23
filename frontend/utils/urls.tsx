@@ -32,3 +32,7 @@ export function getWalletUrl(): string {
 export function dropUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/drop"
 }
+
+export function sendUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/send"
+}
