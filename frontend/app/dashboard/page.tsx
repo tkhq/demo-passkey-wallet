@@ -45,7 +45,7 @@ async function resourceFetcher(url: string): Promise<resource> {
 
 export default function Dashboard() {
   const { state } = useAuth();
-  const [disabledSend, setDisabledSubmit] = useState(false);
+  const [disabledSend, setDisabledSend] = useState(false);
   const [txHash, setTxHash] = useState("");
 
   const router = useRouter();
@@ -61,8 +61,16 @@ export default function Dashboard() {
     }
   }, [state, router])
 
+  useEffect(() => {
+    if (key && key.data && key.data["balance"] === "0.00") {
+      setDisabledSend(true)
+    } else {
+      setDisabledSend(false)
+    }
+  }, [key, setDisabledSend])
+
   async function sendFormHandler (data: sendFormData) {
-    setDisabledSubmit(true)
+    setDisabledSend(true)
 
     const constructRes = await axios.post(constructTxUrl(), {
       amount: data.amount,
@@ -75,7 +83,7 @@ export default function Dashboard() {
       const msg = `Unexpected response: ${constructRes.status}: ${constructRes.data}`;
       console.error(msg)
       alert(msg)
-      setDisabledSubmit(false)
+      setDisabledSend(false)
       return
     }
 
@@ -106,10 +114,10 @@ export default function Dashboard() {
       const msg = `Unexpected response: ${sendRes.status}: ${sendRes.data}`;
       console.error(msg)
       alert(msg)
-      setDisabledSubmit(false)
+      setDisabledSend(false)
       return
     }
-    setDisabledSubmit(false)
+    setDisabledSend(false)
   };
 
   if (keyError) {
@@ -134,7 +142,7 @@ export default function Dashboard() {
             <span className="font-semibold mr-2">Address:</span>
             <span className="font-mono">{key && key.data["address"]}</span>
             <br/>
-            {key ? <Link className="text-indigo-600 cursor-pointer" target="_blank" href={"https://sepolia.etherscan.io/address/" + key.data["address"]}>View on Etherscan &#128279;</Link> : null }
+            {key ? <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href={"https://sepolia.etherscan.io/address/" + key.data["address"]}>View on Etherscan &#128279;</Link> : null }
           </p>
           <p>
             <span className="font-semibold mr-2">Balance:</span>
@@ -182,9 +190,7 @@ export default function Dashboard() {
         </div>
         <div className="text-right">
         <button type="submit" disabled={disabledSend} className="inline-block mx-12 my-4 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
-          {
-            disabledSend ? "Sending..." : "Send"
-          }
+          Send
         </button>
         </div>
       </form>

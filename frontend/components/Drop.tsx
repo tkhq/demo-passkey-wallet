@@ -40,7 +40,7 @@ export function Drop(props: DropProps) {
         return <span>🙏 Dropping...(hold on for a few seconds) 🙏</span>
     }
 
-    return <a className="text-indigo-600 cursor-pointer" onClick={() => { setDropping(true) }}>
-        Fund my wallet ({props.dropsLeft} {props.dropsLeft > 1 ? "drops" : "drop"} remaining) {"💧".repeat(props.dropsLeft)}
+    return <a className="text-indigo-600 cursor-pointer underline" onClick={() => { setDropping(true) }}>
+        Click here to fund your wallet ({props.dropsLeft} {props.dropsLeft > 1 ? "drops" : "drop"} remaining) {"💧".repeat(props.dropsLeft)}
         </a>
     }
