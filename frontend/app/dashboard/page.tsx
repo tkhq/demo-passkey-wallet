@@ -122,14 +122,14 @@ export default function Dashboard() {
       <BroadcastBanner txHash={txHash} setTxHash={setTxHash}></BroadcastBanner>
 
       <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-        <div className="col-span-2">
+        <div className="col-span-5 lg:col-span-2">
           <h3 className="text-xl font-medium">Ethereum Network</h3>
           <p className="text-destructive-red text-sm mt-1">
             This address is for demo purposes only. Anything sent to this address may be lost permanently.
           </p>
         </div>
 
-        <div className="col-auto col-span-3 bg-subtle-accent p-4 text-sm rounded-md">
+        <div className="col-auto col-span-5 lg:col-span-3 sm:col-span-5 bg-subtle-accent p-4 text-sm rounded-md">
           <p className="mb-4">
             <span className="font-semibold mr-2">Address:</span>
             <span className="font-mono">{key && key.data["address"]}</span>
@@ -155,7 +155,7 @@ export default function Dashboard() {
 
       <form className="space-y-6" action="#" method="POST" onSubmit={sendFormSubmit(sendFormHandler)}>
         <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-          <div className="col-span-2">
+          <div className="col-span-5 lg:col-span-2">
             <h3 className="text-xl font-medium">To address</h3>
             <p className="text-sm mt-1">
               Enter the destination for your transaction.<br/>
@@ -163,20 +163,20 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="col-auto col-span-3 p-4 text-sm rounded-sm font-mono">
+          <div className="col-auto col-span-5 lg:col-span-3 p-4 text-sm rounded-sm font-mono">
             <input {...sendFormRegister("destination")} disabled={disabledSend} defaultValue="0x08d2b0a37F869FF76BACB5Bab3278E26ab7067B7" id="destination" name="destination" type="text" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
           </div>
         </div>
 
         <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-          <div className="col-span-2">
+          <div className="col-span-5 lg:col-span-2">
             <h3 className="text-xl font-medium">Amount</h3>
             <p className="text-sm mt-1">
               Enter the amount of Sepolia Ethereum you would like to send.
             </p>
           </div>
 
-          <div className="col-auto col-span-3 p-4 text-sm rounded-sm">
+          <div className="col-auto col-span-5 lg:col-span-3 p-4 text-sm rounded-sm">
             <input {...sendFormRegister("amount")} disabled={disabledSend} defaultValue="0.05" id="amount" name="amount" type="number" min="0" step="0.01" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
           </div>
         </div>
