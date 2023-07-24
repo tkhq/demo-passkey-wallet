@@ -35,9 +35,9 @@ The backend then forwards this signed request to Turnkey. If the request is succ
 
 ### Faucet functionality
 
-For convenience, this demo wallet has functionality to drop Sepolia ETH into wallet addresses. The faucet is itself a Turnkey organization, and the backend uses its API key to sign transfers from the faucet Turnkey organization to arbitrary addresses. Something to note: the faucet organization uses Policies to restrict what this Demo Wallet API key can do. The only thing it can do is sign transactions ("DPK" is short for "Demo Passkey Wallet"):
+For convenience, this demo wallet has functionality to drop Sepolia ETH into wallet addresses. The faucet is itself a Turnkey organization, and the backend uses its API key to sign transfers from the faucet Turnkey organization to arbitrary addresses. Something to note: the faucet organization uses Policies to restrict what this Demo Wallet API key can do. The only thing it can do is sign transactions ("DPW" is short for "Demo Passkey Wallet"):
 
-<img src="./img/faucet-org-policy.png" alt="policy allowing DPK API key to sign" width="800px">
+<img src="./img/faucet-org-policy.png" alt="policy allowing SPW API key to sign" width="800px">
 
 ### Send functionality
 
