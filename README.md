@@ -21,7 +21,7 @@ When authentication happens, the email address entered in the authentication for
 
 <img src="./img/registration-screenshot.png" alt="registration dialog" width="400px">
 
-The collected credentials are used as parameters to the Turnkey API to create a new [Turnkey Sub-Organization](https://turnkey.readme.io/docs/sub-organizations). Each user registering their passkey has their own Turnkey Sub-Organization under the hood. The parent organization has **read-only access** to each sub-organization, but cannot modify its content or sign crypto transactions.
+The collected credentials are used as parameters to the Turnkey API to create a new [Turnkey Sub-Organization](https://turnkey.readme.io/docs/sub-organizations). Each user registering their passkey has their own Turnkey Sub-Organization under the hood. The parent organization has **read-only access** to each sub-organization, but cannot modify their content or sign crypto transactions with any private keys held within Sub-Organizations.
 
 ### Signing In
 
