@@ -177,7 +177,7 @@ export default function Dashboard() {
           </div>
 
           <div className="col-auto col-span-5 lg:col-span-3 p-4 text-sm rounded-sm">
-            <input {...sendFormRegister("amount")} disabled={disabledSend} defaultValue="0.05" id="amount" name="amount" type="number" min="0" step="0.01" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
+            <input {...sendFormRegister("amount")} disabled={disabledSend} defaultValue="0.02" id="amount" name="amount" type="number" min="0" step="0.01" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
           </div>
         </div>
         <div className="text-right">
