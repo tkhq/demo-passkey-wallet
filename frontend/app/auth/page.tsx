@@ -180,7 +180,7 @@ async function signup(email: string) {
 
   return (
     <main className="w-full min-h-screen grid grid-cols-5">
-      <div className="hidden lg:block lg:visible lg:col-span-2 bg-black flex-none">
+      <div className="hidden lg:block lg:visible lg:col-span-2 bg-black flex-none relative">
         <Image
           className={`inline-block invert my-12 mx-8`}
           src="/turnkey_logo_black.svg"
@@ -189,7 +189,7 @@ async function signup(email: string) {
           height={30}
           priority
         />
-        <div className="gradient-container">
+        <div className="absolute bottom-0 left-0 w-full h-full overflow-hidden">
           <div className="gradient-blue"></div>
           <div className="gradient-orange"></div>
         </div>

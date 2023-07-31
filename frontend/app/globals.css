@@ -67,40 +67,31 @@ Use like this in your CSS:
   font-family: "Favorit", 'Times New Roman', Times, serif;
 }
 
-.gradient-container {
-  position: absolute;
-  width: 50%;
-  height: 50%;
-  left: 0;
-  top: 50%; /* (480 + 38) / 964 */
-}
-
 .gradient-orange {
   position: absolute;
-  bottom: 0%;
-  right: 12%;
-  width: 40%;
-  height: 83%;
+  bottom: -50%;
+  right: 0%;
+  width: 80%;
+  height: 100%;
 
   background: linear-gradient(
     180deg,
     rgba(191, 125, 41, 0.27) 0%,
     #f6eddf 117.67%
   );
-  filter: blur(105px);
+  filter: blur(160px);
   animation: pulsate-orange 2s alternate infinite ease-in-out;
 }
 
 .gradient-blue {
   position: absolute;
-  top: 0;
-  left: 0;
-  /* width: 84%; */ /* 611.46 / 729.28 */ /* figma value */
-  width: 65%;
-  height: 77%; /* 953.07 / 1232.01 */
+  top: 10%;
+  right: -20%;
+  width: 78%;
+  height: 87%;
 
   background: linear-gradient(180deg, #4c48ff 0%, #eae7e9 100%);
-  filter: blur(140px);
+  filter: blur(180px);
 
   animation: pulsate-blue 3s alternate infinite ease-in-out;
 }
