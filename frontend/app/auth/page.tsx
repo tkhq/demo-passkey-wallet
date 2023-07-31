@@ -179,31 +179,48 @@ async function signup(email: string) {
 }
 
   return (
-    <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <Image width={200} height={200} className="mx-auto h-32 w-auto" src="/turnkey.svg" alt="Demo Passkey Wallet Logo"/>
-        <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-zinc-900">Create or Access your account</h2>
+    <main className="w-full min-h-screen grid grid-cols-5">
+      <div className="hidden lg:block lg:visible lg:col-span-2 bg-black flex-none">
+        <Image
+          className={`inline-block invert my-12 mx-8`}
+          src="/turnkey_logo_black.svg"
+          alt="->"
+          width={110}
+          height={30}
+          priority
+        />
+        <div className="gradient-container">
+          <div className="gradient-blue"></div>
+          <div className="gradient-orange"></div>
+        </div>
       </div>
 
-      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-        <form className="space-y-6" action="#" method="POST" onSubmit={subOrgFormSubmit(registerOrAuthenticate)}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium leading-6 text-zinc-900">Email address</label>
-            <div className="mt-2">
-              <input {...subOrgFormRegister("email")} disabled={disabledSubmit} id="email" name="email" type="email" autoComplete="email" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
+      <div className="col-span-5 lg:col-span-3">
+        <div className="mt-48">
+          <Image width={80} height={80} className="mx-auto" src="/turnkey.svg" alt="Demo Passkey Wallet Logo"/>
+          <h2 className="mt-4 text-center text-3xl favorit leading-9 tracking-tight text-zinc-900">Create or access your account</h2>
+        </div>
+
+        <div className="mt-10">
+          <form className="space-y-4 p-4 max-w-lg mx-auto" action="#" method="POST" onSubmit={subOrgFormSubmit(registerOrAuthenticate)}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium leading-6 text-zinc-900">Email address</label>
+              <div className="mt-2">
+                <input {...subOrgFormRegister("email")} disabled={disabledSubmit} placeholder="Enter your email" id="email" name="email" type="email" autoComplete="email" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <button type="submit" disabled={disabledSubmit} className="flex w-full justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
-              {
-                disabledSubmit ? "Loading..." : "Authenticate with Passkeys"
-              }
-            </button>
-          </div>
-        </form>
+            <div>
+              <button type="submit" disabled={disabledSubmit} className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
+                {
+                  disabledSubmit ? "Loading..." : "Authenticate with Passkeys"
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+        <Link className="block w-full text-center mt-12" href={"/"}>Go back home</Link>
       </div>
-      <Link className="block w-full text-center mt-12" href={"/"}>Go back home</Link>
-    </div>
+    </main>
   )
 }

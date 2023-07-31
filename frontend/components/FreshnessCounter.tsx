@@ -3,17 +3,18 @@ import { useEffect, useState } from 'react';
 
 interface FreshnessCounterProps {
     isValidating: boolean,
+    updateFrequency: number,
 }
 
 export function FreshnessCounter(props: FreshnessCounterProps) {
-    // We cheat slightly here, our refresh interval is 5s instead of 4. But otherwise "refreshing..." wouldn't be readable.
-    const [secsAgo, setSecsAgo] = useState(4);
+    // We cheat slightly here, our refresh interval is n+1s instead of n. But otherwise "refreshing..." wouldn't be readable.
+    const [secsAgo, setSecsAgo] = useState(props.updateFrequency + 1);
 
     useEffect(() => {
         if (props.isValidating) {
-            setSecsAgo(4)
+            setSecsAgo(props.updateFrequency)
         }
-    }, [props.isValidating, setSecsAgo])
+    }, [props.isValidating, setSecsAgo, props.updateFrequency])
 
     useEffect(() => {
         const interval = setInterval(() => setSecsAgo(Math.max(secsAgo - 1, 0)), 1000);

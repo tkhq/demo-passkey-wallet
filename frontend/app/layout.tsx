@@ -30,16 +30,7 @@ export default function RootLayout({
         <link rel="manifest" href="/site.webmanifest" />
       </Head>
       <body className={inter.className}>
-        <main className="max-w-5xl min-h-screen p-8 m-auto">
-          <AuthProvider>{children}</AuthProvider>
-        </main>
-        <footer className="m-8 text-center text-zinc-400 text-xs">
-          <p>
-            Copyright &copy; Turnkey Global Inc. All rights reserved.
-            
-            The code behind this demo is open-source and can be used under certain conditions. <a href="https://github.com/tkhq/demo-passkey-wallet/blob/main/LICENSE">See LICENSE file for more details</a>.
-          </p>
-        </footer>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )

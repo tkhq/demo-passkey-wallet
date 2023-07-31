@@ -5,3 +5,116 @@
 html, body {
   background-color: #f5f5f5;
 }
+
+/*
+Font families defined by this CSS: "Favorit"
+
+Use like this in your CSS:
+
+  :root { font-family: 'Favorit', serif; }
+*/
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/fonts/favorit/Favorit-Light.woff")
+    format("woff");
+}
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/fonts/favorit/Favorit-Light.otf")
+    format("otf");
+}
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 200;
+  font-display: swap;
+  src: url("/fonts/favorit/Favorit-Light.ttf")
+    format("ttf");
+}
+
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/favorit/FavoritPro-Regular.woff")
+    format("woff");
+}
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/favorit/FavoritPro-Regular.otf")
+    format("otf");
+}
+@font-face {
+  font-family: "Favorit";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/favorit/FavoritPro-Regular.ttf")
+    format("ttf");
+}
+
+.favorit {
+  font-family: "Favorit", 'Times New Roman', Times, serif;
+}
+
+.gradient-container {
+  position: absolute;
+  width: 50%;
+  height: 50%;
+  left: 0;
+  top: 50%; /* (480 + 38) / 964 */
+}
+
+.gradient-orange {
+  position: absolute;
+  bottom: 0%;
+  right: 12%;
+  width: 40%;
+  height: 83%;
+
+  background: linear-gradient(
+    180deg,
+    rgba(191, 125, 41, 0.27) 0%,
+    #f6eddf 117.67%
+  );
+  filter: blur(105px);
+  animation: pulsate-orange 2s alternate infinite ease-in-out;
+}
+
+.gradient-blue {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* width: 84%; */ /* 611.46 / 729.28 */ /* figma value */
+  width: 65%;
+  height: 77%; /* 953.07 / 1232.01 */
+
+  background: linear-gradient(180deg, #4c48ff 0%, #eae7e9 100%);
+  filter: blur(140px);
+
+  animation: pulsate-blue 3s alternate infinite ease-in-out;
+}
+
+@keyframes pulsate-orange {
+  100% {
+    box-shadow: inset 21px 2px 70.0749px #f6eddf;
+    filter: blur(210px);
+  }
+}
+
+@keyframes pulsate-blue {
+  100% {
+    box-shadow: inset 21px 2px 70.0749px #eae7e9;
+    filter: blur(280px);
+  }
+}

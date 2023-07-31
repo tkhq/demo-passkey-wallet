@@ -18,6 +18,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
+	"github.com/tkhq/demo-passkey-wallet/internal/alchemy"
 	"github.com/tkhq/demo-passkey-wallet/internal/db"
 	"github.com/tkhq/demo-passkey-wallet/internal/ethereum"
 	"github.com/tkhq/demo-passkey-wallet/internal/models"
@@ -390,6 +391,27 @@ func main() {
 		ctx.JSON(http.StatusOK, map[string]interface{}{
 			"hash": hash,
 		})
+	})
+
+	router.GET("/api/wallet/history", func(ctx *gin.Context) {
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+
+		privateKey, err := models.GetPrivateKeyForUser(*user)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
+			return
+		}
+
+		history, err := alchemy.TransactionHistory(privateKey.EthereumAddress)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to get transaction history").Error())
+			return
+		}
+		ctx.JSON(http.StatusOK, history)
 	})
 
 	router.Run(":" + port)

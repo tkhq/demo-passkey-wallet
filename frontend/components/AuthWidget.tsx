@@ -31,24 +31,24 @@ export function AuthWidget() {
             return <div className="text-right pt-1">
                 {
                     pathName !== "/dashboard" ?
-                    <a href="/dashboard" className="inline-block rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    <a href="/dashboard" className="inline-block rounded-md bg-zinc-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                         Dashboard
                     </a>
                     : ''
                 }
-                <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-3 py-2 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-6 py-3 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                     Sign out
                 </button>
-                <p className="mt-2 text-xs leading-5 text-zinc-600">Signed in as {state.email}</p>
+                <p className="mt-2 text-xs leading-5 text-white">Signed in as {state.email}</p>
             </div>;
         } else {
             return <div className="mt-2 text-right">
-                <a href="/auth" className="inline-block rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:transparency:75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign In</a>
+                <a href="/auth" className="inline-block rounded-md bg-zinc-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm hover:transparency:75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign In</a>
             </div>
         }
     } else {
         return <div className="mt-2 text-right font-bold">
-        <p className="inline-block px-3 py-2 text-center text-sm">Loading...</p>
+        <p className="inline-block px-6 py-3 text-center text-sm">Loading...</p>
     </div>
     }
  }

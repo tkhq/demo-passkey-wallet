@@ -14,7 +14,9 @@ module.exports = {
       },
       colors: {
         'destructive-red': '#db383e',
-        'subtle-accent': '#e7e9f3'
+        'subtle-accent': '#e4e8f1',
+        'send-pill': '#EAF2EB',
+        'receive-pill': '#FFFAED'
       },
     },
   },

@@ -30,7 +30,7 @@ export function Drop(props: DropProps) {
         }
         
         startDrop();
-    }, [dropping, mutate])
+    }, [dropping, mutate, props])
 
     if (props.dropsLeft == 0) {
         return <span>No more drops left! 😭</span>
@@ -41,6 +41,6 @@ export function Drop(props: DropProps) {
     }
 
     return <a className="text-indigo-600 cursor-pointer underline" onClick={() => { setDropping(true) }}>
-        Click here to fund your wallet ({props.dropsLeft} {props.dropsLeft > 1 ? "drops" : "drop"} remaining) {"💧".repeat(props.dropsLeft)}
+        Click here to fund your wallet ({props.dropsLeft} {props.dropsLeft > 1 ? "drops" : "drop"} remaining)
         </a>
     }

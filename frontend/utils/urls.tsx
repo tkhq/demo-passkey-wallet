@@ -29,6 +29,10 @@ export function getWalletUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet";
 }
 
+export function getWalletHistoryUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/history"
+}
+
 export function dropUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/drop"
 }
@@ -40,3 +44,5 @@ export function constructTxUrl(): string {
 export function sendTxUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/send-tx"
 }
+
+

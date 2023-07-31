@@ -2,8 +2,9 @@
 
 import { BroadcastBanner } from '@/components/BroadcastBanner';
 import { Drop } from '@/components/Drop';
+import { Footer } from '@/components/Footer';
 import { FreshnessCounter } from '@/components/FreshnessCounter';
-import { Nav } from '@/components/Nav';
+import Image from 'next/image';
 import { useAuth } from '@/components/context/auth.context';
 import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
 import { browserInit } from '@turnkey/http';
@@ -14,6 +15,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
+import { AuthWidget } from '@/components/AuthWidget';
+import { History } from '@/components/History';
 
 browserInit({
   baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
@@ -126,83 +129,118 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Nav></Nav>
-      <BroadcastBanner txHash={txHash} setTxHash={setTxHash}></BroadcastBanner>
-
-      <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-        <div className="col-span-5 lg:col-span-2">
-          <h3 className="text-xl font-medium">Ethereum Network</h3>
-          <p className="text-destructive-red text-sm mt-1">
-            This address is for demo purposes only. Anything sent to this address may be lost permanently.
-          </p>
-        </div>
-
-        <div className="col-auto col-span-5 lg:col-span-3 sm:col-span-5 bg-subtle-accent p-4 text-sm rounded-md">
-          <p className="mb-4">
-            <span className="font-semibold mr-2">Address:</span>
-            <span className="font-mono">{key && key.data["address"]}</span>
-            <br/>
-            {key ? <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href={"https://sepolia.etherscan.io/address/" + key.data["address"]}>View on Etherscan &#128279;</Link> : null }
-          </p>
-          <p>
-            <span className="font-semibold mr-2">Balance:</span>
-            <span>{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>
-            {
-              key && key.data["balance"] ? <FreshnessCounter isValidating={isValidating}></FreshnessCounter> : null
-            }
-            <br/>
-
-            { key && key.data["dropsLeft"] !== undefined ? 
-              <Drop dropsLeft={key.data["dropsLeft"] as number} setTxHash={setTxHash}></Drop>
-              : null
-            }
-
-          </p>
-        </div>
-      </div>
-
-      <form className="space-y-6" action="#" method="POST" onSubmit={sendFormSubmit(sendFormHandler)}>
-        <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-          <div className="col-span-5 lg:col-span-2">
-            <h3 className="text-xl font-medium">To address</h3>
-            <p className="text-sm mt-1">
-              Enter the destination for your transaction.<br/>
-              Feeling generous? Send back to Turnkey&apos;s faucet address (leave this input alone)
-            </p>
+      <header className="bg-zinc-900 p-4 px-8">
+        <div className="grid grid-cols-3 flex-none mb-2">
+          <div className="col-span-2 mt-4">
+              <Image
+              className={`inline-block invert`}
+              src="/turnkey_logo_black.svg"
+              alt="Turnkey"
+              width={110}
+              height={30}
+              priority
+              />
           </div>
 
-          <div className="col-auto col-span-5 lg:col-span-3 p-4 text-sm rounded-sm font-mono">
-            <input {...sendFormRegister("destination")} defaultValue="0x08d2b0a37F869FF76BACB5Bab3278E26ab7067B7" id="destination" name="destination" type="text" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
+          <div className="col-span-1">
+              <AuthWidget></AuthWidget>
           </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-8 my-8 m-8 border-b pb-8">
-          <div className="col-span-5 lg:col-span-2">
-            <h3 className="text-xl font-medium">Amount</h3>
-            <p className="text-sm mt-1">
-              Enter the amount of Sepolia Ethereum you would like to send.
-            </p>
+        <h1 className="favorit text-5xl mt-2 mb-2 text-white">
+              Demo passkey wallet
+        </h1>
+      </header>
+      <div className="max-w-5xl mx-auto">
+        <BroadcastBanner txHash={txHash} setTxHash={setTxHash}></BroadcastBanner>
+
+        <section className="lg:bg-subtle-accent p-8 lg:mt-16 lg:border border-zinc-300 divide-y divide-zinc-300">
+          <div className="grid grid-cols-5 gap-8 mb-8">
+            <div className="col-span-5 lg:col-span-2">
+              <h3 className="text-3xl font-medium favorit mb-4">Your wallet</h3>
+              <p className="text-destructive-red text-sm mt-1">
+                This address is for demo purposes only. Anything sent to this address may be lost permanently.
+              </p>
+            </div>
+
+            <div className="col-auto col-span-5 lg:col-span-3 sm:col-span-5">
+              <p className="mb-4">
+                <span className="font-semibold mr-2">Address:</span>
+                <span className="font-mono">{key && key.data["address"]}</span>
+                <br/>
+                {key ? <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href={"https://sepolia.etherscan.io/address/" + key.data["address"]}>
+                    View on Etherscan <Image
+                    className={`inline-block`}
+                    src="/arrow.svg"
+                    alt="->"
+                    width={20}
+                    height={20}
+                    priority
+                  />
+                  </Link> : null }
+              </p>
+              <p>
+                <span className="font-semibold mr-2">Balance:</span>
+                <span className="font-mono">{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>
+                {
+                  key && key.data["balance"] ? <FreshnessCounter updateFrequency={3} isValidating={isValidating}></FreshnessCounter> : null
+                }
+                <br/>
+
+                { key && key.data["dropsLeft"] !== undefined ?
+                  <Drop dropsLeft={key.data["dropsLeft"] as number} setTxHash={setTxHash}></Drop>
+                  : null
+                }
+
+              </p>
+            </div>
           </div>
 
-          <div className="col-auto col-span-5 lg:col-span-3 p-4 text-sm rounded-sm">
-            <input {...sendFormRegister("amount")} defaultValue="0.02" id="amount" name="amount" type="number" min="0" step="0.01" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 sm:text-sm sm:leading-6 disabled:opacity-75 disabled:text-zinc-400"/>
-          </div>
-        </div>
-        <div className="text-right">
-        <button type="submit" disabled={disabledSend} className="inline-block mx-12 my-4 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
-          Send
-        </button>
-        </div>
-      </form>
+          <form action="#" method="POST" onSubmit={sendFormSubmit(sendFormHandler)}>
+            <div className="grid grid-cols-5 gap-8 my-8">
+              <div className="col-span-5 lg:col-span-2">
+              <h3 className="text-3xl font-medium favorit mt-2 mb-4">To address</h3>
+                <p className="text-sm mt-1">
+                  Enter the destination for your transaction. By default, you’ll send back to Turnkey’s faucet.
+                </p>
+              </div>
 
-      <div className="text-zinc-500 text-center font-semibold mt-12">
-        <Link className="underline hover:font-bold" target="_blank" href={"https://turnkey.readme.io/reference/getting-started"} title="Ready to build?">
-          Documentation
-        </Link>
-        {' '}|{' '}
-        <Link className="underline hover:font-bold" target="_blank" href={getSubOrganizationUrl()} title="Did you know? You are the owner of a completely independent Turnkey Sub-Organization!">
-          Sub-Org Details
-        </Link>
+              <div className="col-auto col-span-5 lg:col-span-3 rounded-sm font-mono">
+                <input {...sendFormRegister("destination")} defaultValue="0x08d2b0a37F869FF76BACB5Bab3278E26ab7067B7" id="destination" name="destination" type="text" required className="block w-full rounded-md border-0 py-3 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 gap-8">
+              <div className="col-span-5 lg:col-span-2">
+              <h3 className="text-3xl font-medium favorit mt-2 mb-4">Amount</h3>
+                <p className="text-sm">
+                  Enter the amount of your transaction.
+                </p>
+              </div>
+
+              <div className="col-auto col-span-5 lg:col-span-3 rounded-sm flex h-fit">
+                <input {...sendFormRegister("amount")} defaultValue="0.02" id="amount" name="amount" type="number" min="0" step="0.01" required className="block flex-1 rounded-md border-0 py-3 font-mono text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
+                <button type="submit" disabled={disabledSend} className="block flex-none ml-1 rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
+                  Send
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <History></History>
+
+        <div className="text-zinc-500 text-center font-semibold mt-12">
+          <Link className="underline hover:font-bold" target="_blank" href={"https://turnkey.readme.io/reference/getting-started"} title="Ready to build?">
+            Documentation
+          </Link>
+          {' '}|{' '}
+          <Link className="underline hover:font-bold" target="_blank" href={getSubOrganizationUrl()} title="Did you know? You are the owner of a completely independent Turnkey Sub-Organization!">
+            Sub-Org Details
+          </Link>
+        </div>
+
+        <Footer></Footer>
       </div>
     </div>
   )
