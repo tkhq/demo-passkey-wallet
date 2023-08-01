@@ -3,7 +3,6 @@
 import { BroadcastBanner } from '@/components/BroadcastBanner';
 import { Drop } from '@/components/Drop';
 import { Footer } from '@/components/Footer';
-import { FreshnessCounter } from '@/components/FreshnessCounter';
 import Image from 'next/image';
 import { useAuth } from '@/components/context/auth.context';
 import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
@@ -54,7 +53,7 @@ export default function Dashboard() {
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } = useForm<sendFormData>();
 
-  const { data: key, error: keyError, isValidating: isValidating } = useSWR(getWalletUrl(), resourceFetcher, { refreshInterval: 5000 })
+  const { data: key, error: keyError } = useSWR(getWalletUrl(), resourceFetcher, { refreshInterval: 5000 })
 
   useEffect(() => {
     if (state.isLoaded === true && state.isLoggedIn === false) {
@@ -182,9 +181,6 @@ export default function Dashboard() {
               <p>
                 <span className="font-semibold mr-2">Balance:</span>
                 <span className="font-mono">{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>
-                {
-                  key && key.data["balance"] ? <FreshnessCounter updateFrequency={3} isValidating={isValidating}></FreshnessCounter> : null
-                }
                 <br/>
 
                 { key && key.data["dropsLeft"] !== undefined ?

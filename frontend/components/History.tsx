@@ -1,9 +1,7 @@
 'use client'
 import { getWalletHistoryUrl } from '@/utils/urls';
 import axios from 'axios';
-import { Dispatch, SetStateAction, useEffect } from 'react';
 import useSWR from 'swr';
-import { FreshnessCounter } from './FreshnessCounter';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -39,17 +37,14 @@ function abbreviateAddress(address: string): string {
 } 
 
 export function History() {
-    const { data: history, error: historyError, isValidating: isValidating } = useSWR(getWalletHistoryUrl(), historyFetcher, { refreshInterval: 10000 })
+    const { data: history } = useSWR(getWalletHistoryUrl(), historyFetcher, { refreshInterval: 10000 })
 
     return (
         <>
         {
             history && history.data && history.data.length > 0 ?
             <>
-                <h2 className="text-3xl font-medium favorit mt-8 ml-8">History</h2>
-                <div className="mb-6 ml-6">
-                    <FreshnessCounter updateFrequency={10} isValidating={isValidating}></FreshnessCounter>
-                </div>
+                <h2 className="text-3xl font-medium favorit m-8">History</h2>
 
                 <div className="table table-auto w-full border-collapse border border-zinc-300">
                     <div className="table-header-group text-zinc-500">
@@ -65,7 +60,12 @@ export function History() {
                         history?.data.map(transfer => (
                             <div className="table-row h-8 border border-t-1 border-zinc-300" key={transfer.hash}>
                                 <div className="table-cell p-3">
-                                    <Link target="_blank" href={"https://sepolia.etherscan.io/tx/" + transfer.hash } title="View on Etherscan" className="inline-block mr-2">
+                                    {
+                                        transfer.type === "withdrawal" ?
+                                        <span className="inline-block text-zinc-500 bg-send-pill rounded-xl p-2">Send</span>
+                                        : <span className="inline-block text-zinc-500 bg-receive-pill rounded-xl p-2">Receive</span>
+                                    }
+                                    <Link target="_blank" href={"https://sepolia.etherscan.io/tx/" + transfer.hash } title="View on Etherscan" className="inline-block ml-2">
                                         <Image
                                         src="/external_link.svg"
                                         alt="->"
@@ -74,11 +74,6 @@ export function History() {
                                         priority
                                         />
                                     </Link>
-                                    {
-                                        transfer.type === "withdrawal" ?
-                                        <span className="inline-block text-zinc-500 bg-send-pill rounded-xl p-2">send</span>
-                                        : <span className="inline-block text-zinc-500 bg-receive-pill rounded-xl p-2">receive</span>
-                                    }
                                 </div>
                                 <div className="table-cell p-3 font-mono">{transfer.amount} ETH</div>
                                 <div className="table-cell p-3 font-mono">{abbreviateAddress(transfer.source)}</div>

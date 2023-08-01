@@ -37,7 +37,7 @@ export function Drop(props: DropProps) {
     }
 
     if (dropping === true) {
-        return <span>🙏 Dropping...(hold on for a few seconds) 🙏</span>
+        return <span>Drop in progress...</span>
     }
 
     return <a className="text-indigo-600 cursor-pointer underline" onClick={() => { setDropping(true) }}>

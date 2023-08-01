@@ -219,7 +219,7 @@ async function signup(email: string) {
             </div>
           </form>
         </div>
-        <Link className="block w-full text-center mt-12" href={"/"}>Go back home</Link>
+        <Link className="block w-full text-center mt-4" href={"/"}>Go back home</Link>
       </div>
     </main>
   )

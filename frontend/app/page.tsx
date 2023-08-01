@@ -69,7 +69,7 @@ export default async function Home() {
             </a>
 
             <a
-              href="https://turnkey.io"
+              href="https://fidoalliance.org/passkeys/"
               className="group h-fit rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
               target="_blank"
               rel="noopener noreferrer"
