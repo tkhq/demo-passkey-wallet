@@ -9,7 +9,7 @@ export function Footer() {
           <p>
             © 2023 Turnkey Global, Inc. All rights reserved.
     
-            See <Link className="underline" target="_blank" href="https://github.com/tkhq/demo-passkey-wallet#legal-disclaimer">legal disclaimer for terms and conditions</Link>.
+            <Link className="underline" target="_blank" href="https://github.com/tkhq/demo-passkey-wallet#legal-disclaimer">Legal disclaimer</Link>.
           </p>
         </footer>
     )
