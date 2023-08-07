@@ -23,7 +23,7 @@ When authentication happens, the email address entered in the authentication for
 
 <img src="./img/registration-screenshot.png" alt="registration dialog" width="400px">
 
-The collected credentials are used as parameters to the Turnkey API to create a new [Turnkey Sub-Organization](https://turnkey.readme.io/docs/sub-organizations). Each user registering their passkey has their own Turnkey Sub-Organization under the hood. The parent organization has **read-only access** to each sub-organization, but cannot modify their content or sign crypto transactions with any private keys held within Sub-Organizations.
+The collected credentials are used as parameters to the Turnkey API to create a new [Turnkey Sub-Organization](https://docs.turnkey.com/getting-started/sub-organizations). Each user registering their passkey has their own Turnkey Sub-Organization under the hood. The parent organization has **read-only access** to each sub-organization, but cannot modify their content or sign crypto transactions with any private keys held within Sub-Organizations.
 
 ### Signing In
 
@@ -37,7 +37,7 @@ The backend then forwards this signed request to Turnkey. If the request is succ
 
 ### Faucet functionality
 
-For convenience, this demo wallet has functionality to drop Sepolia ETH into wallet addresses. The faucet is itself a Turnkey organization, and the backend uses its API key to sign transfers from the faucet Turnkey organization to arbitrary addresses. Something to note: the faucet organization uses [Turnkey Policies](https://turnkey.readme.io/docs/policy-engine-overview) to restrict what this Demo Wallet API key can do. The only thing it can do is sign transactions.
+For convenience, this demo wallet has functionality to drop Sepolia ETH into wallet addresses. The faucet is itself a Turnkey organization, and the backend uses its API key to sign transfers from the faucet Turnkey organization to arbitrary addresses. Something to note: the faucet organization uses [Turnkey Policies](https://docs.turnkey.com/managing-policies/overview) to restrict what this Demo Wallet API key can do. The only thing it can do is sign transactions.
 
 ### Send functionality
 

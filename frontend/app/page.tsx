@@ -47,7 +47,7 @@ export default async function Home() {
 
           <div className="mb-32 grid text-center lg:mb-0 lg:mt-8 lg:grid-cols-3 lg:text-left grow">
             <a
-              href="https://turnkey.readme.io/reference/getting-started"
+              href="https://docs.turnkey.com/getting-started/quickstart"
               className="group h-fit rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-zinc-200"
               target="_blank"
               rel="noopener noreferrer"

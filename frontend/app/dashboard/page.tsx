@@ -227,7 +227,7 @@ export default function Dashboard() {
         <History></History>
 
         <div className="text-zinc-500 text-center font-semibold mt-12">
-          <Link className="underline hover:font-bold" target="_blank" href={"https://turnkey.readme.io/reference/getting-started"} title="Ready to build?">
+          <Link className="underline hover:font-bold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
             Documentation
           </Link>
           {' '}|{' '}
