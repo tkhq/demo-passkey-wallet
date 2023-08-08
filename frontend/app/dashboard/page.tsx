@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/components/context/auth.context';
 import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
 import { browserInit } from '@turnkey/http';
-import { TPostSignTransactionInput, federatedPostSignTransaction } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
+import { TSignTransactionInput, signSignTransaction } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -90,7 +90,7 @@ export default function Dashboard() {
     }
 
     // Now let's sign this!
-    const signTransactionInput: TPostSignTransactionInput = {
+    const signTransactionInput: TSignTransactionInput = {
       body: {
         type: "ACTIVITY_TYPE_SIGN_TRANSACTION",
         organizationId: constructRes.data["organizationId"],
@@ -102,7 +102,7 @@ export default function Dashboard() {
         }
       }
     }
-    const signedRequest = await federatedPostSignTransaction(signTransactionInput);
+    const signedRequest = await signSignTransaction(signTransactionInput);
 
     const sendRes = await axios.post(sendTxUrl(), {
       signedSendTx: signedRequest,

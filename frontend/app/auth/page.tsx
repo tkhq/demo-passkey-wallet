@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { authenticateUrl, registerUrl, registrationStatusUrl, whoamiUrl } from "../../utils/urls"
 import { useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
-import { TPostGetWhoamiInput, federatedPostGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
+import { TGetWhoamiInput, signGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import Link from 'next/link';
@@ -98,12 +98,12 @@ async function subOrganizationIdForEmail(email: string): Promise<string|null> {
 // The backend will then forward to Turnkey and get a response on whether the stamp was valid.
 // If this is successful, our backend will issue a logged in session.
 async function authenticate(subOrganizationId: string) {
-  const whoamiInput: TPostGetWhoamiInput = {
+  const whoamiInput: TGetWhoamiInput = {
     body: {
       organizationId: subOrganizationId,
     }
   }
-  const signedWhoamiRequest = await federatedPostGetWhoami(whoamiInput);
+  const signedWhoamiRequest = await signGetWhoami(whoamiInput);
 
   const res = await axios.post(authenticateUrl(), {
     signedWhoamiRequest: signedWhoamiRequest,
