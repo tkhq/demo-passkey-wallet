@@ -72,7 +72,7 @@ func main() {
 	router.Use(ginErrorLogMiddleware)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "https://wallet.tx.xyz"},
+		AllowOrigins:     []string{"http://localhost:3456", "https://wallet.tx.xyz"},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,

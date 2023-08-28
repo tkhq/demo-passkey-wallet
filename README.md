@@ -102,7 +102,7 @@ $ cp .env.example .env.local
 $ npm run dev
 ```
 
-The frontend should start on port 3000.
+The frontend should start on port 3456: visit http://localhost:3456
 
 ## Deployment
 
