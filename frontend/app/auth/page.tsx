@@ -152,8 +152,8 @@ async function signup(email: string) {
         displayName: email,
       },
       authenticatorSelection: {
-        requireResidentKey: false,
-        residentKey: "preferred",
+        requireResidentKey: true,
+        residentKey: "required",
         userVerification: "preferred",
       }
     },
