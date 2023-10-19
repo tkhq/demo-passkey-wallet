@@ -15,7 +15,7 @@ import (
 	"github.com/tkhq/go-sdk/pkg/api/client/activities"
 	"github.com/tkhq/go-sdk/pkg/api/client/organizations"
 	"github.com/tkhq/go-sdk/pkg/api/client/private_keys"
-	"github.com/tkhq/go-sdk/pkg/api/client/users"
+	"github.com/tkhq/go-sdk/pkg/api/client/who_am_i"
 
 	"github.com/tkhq/go-sdk/pkg/api/models"
 	"github.com/tkhq/go-sdk/pkg/apikey"
@@ -35,6 +35,15 @@ type TurnkeyApiClient struct {
 	OrganizationID string
 
 	TurnkeyApiHost string
+}
+
+// Custom type to hold results from a sub-org creation result
+type CreateSubOrganizationResult struct {
+	SubOrganizationId string
+	// Note: we _could_ create more than 1 private key per sub-org
+	// But we don't want to right now.
+	PrivateKeyId    string
+	EthereumAddress string
 }
 
 // Creates a Turnkey SDK client from a Turnkey API key
@@ -58,10 +67,10 @@ func Init(turnkeyApiHost, turnkeyApiPrivateKey, organizationID string) error {
 }
 
 func (c *TurnkeyApiClient) Whoami() (string, error) {
-	p := users.NewPublicAPIServiceGetWhoamiParams().WithBody(&models.V1GetWhoamiRequest{
+	p := who_am_i.NewPublicAPIServiceGetWhoamiParams().WithBody(&models.V1GetWhoamiRequest{
 		OrganizationID: &c.OrganizationID,
 	})
-	resp, err := c.Client.Users.PublicAPIServiceGetWhoami(p, c.GetAuthenticator())
+	resp, err := c.Client.WhoAmi.PublicAPIServiceGetWhoami(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +108,10 @@ func (c *TurnkeyApiClient) ForwardSignedRequest(url, requestBody, stamp string, 
 	return res.StatusCode, responseBody, nil
 }
 
-func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestation types.Attestation, challenge string) (string, error) {
+// This function creates a new sub-organization for a given user email.
+// Turnkey's CREATE_SUB_ORGANIZATION activity supports creating a sub-org and private key(s) at once, atomically.
+// We use this to our advantage here!
+func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestation types.Attestation, challenge string) (*CreateSubOrganizationResult, error) {
 	fmt.Printf("Creating sub-org for user %s...\n", userEmail)
 	sanitizedEmail := strings.ReplaceAll(userEmail, "@", "-at-")
 	sanitizedEmail = strings.ReplaceAll(sanitizedEmail, "+", "-plus-")
@@ -112,17 +124,30 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 	// TODO: this should accept normal ints!
 	rootQuorumThreshold := int32(1)
 	// TODO: this should be automatically filled based on Param type.
-	activityType := "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V2"
+	activityType := "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V3"
 
 	credentialId := attestation.CredentialId
 	clientDataJson := attestation.ClientDataJson
 	attestationObject := attestation.AttestationObject
 	apiPublicKey := c.APIKey.TkPublicKey
+	timestamp := util.RequestTimestamp()
+	ethereumKeyName := fmt.Sprintf("Ethereum Key - %s", *timestamp)
 
 	p := organizations.NewPublicAPIServiceCreateSubOrganizationParams().WithBody(&models.V1CreateSubOrganizationRequest{
 		OrganizationID: &c.OrganizationID,
-		Parameters: &models.V1CreateSubOrganizationIntentV2{
+		Parameters: &models.V1CreateSubOrganizationIntentV3{
+			SubOrganizationName: &subOrganizationName,
 			RootQuorumThreshold: &rootQuorumThreshold,
+			PrivateKeys: []*models.V1PrivateKeyParams{
+				{
+					AddressFormats: []models.Immutableactivityv1AddressFormat{
+						models.Immutableactivityv1AddressFormatADDRESSFORMATETHEREUM,
+					},
+					Curve:          models.Immutableactivityv1CurveCURVESECP256K1.Pointer(),
+					PrivateKeyName: &ethereumKeyName,
+					PrivateKeyTags: []string{},
+				},
+			},
 			RootUsers: []*models.V1RootUserParams{
 				{
 					// TODO: why is this a pointer instead of a string? This is a required string.
@@ -157,32 +182,41 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 					Authenticators: []*models.V1AuthenticatorParamsV2{},
 				},
 			},
-			SubOrganizationName: &subOrganizationName,
 		},
-		TimestampMs: util.RequestTimestamp(),
+		TimestampMs: timestamp,
 		Type:        &activityType,
 	})
 
 	response, err := c.Client.Organizations.PublicAPIServiceCreateSubOrganization(p, c.GetAuthenticator())
 	if err != nil {
-		return "", err
+		return nil, errors.Wrap(err, "error while creating CREATE_SUB_ORGANIZATION activity")
 	}
 	if response == nil || response.Payload == nil || response.Payload.Activity == nil || response.Payload.Activity.ID == nil {
-		return "", fmt.Errorf("unable to get activity ID from activity response: %v", response)
+		return nil, fmt.Errorf("unable to get activity ID from activity response: %v", response)
 	}
 
 	result, err := c.WaitForResult(c.OrganizationID, *response.Payload.Activity.ID)
 	if err != nil {
-		return "", errors.Wrap(err, "error while waiting for activity result")
+		return nil, errors.Wrap(err, "error while waiting for activity result")
 	}
 	fmt.Printf("activity %s completed\n", *response.Payload.Activity.ID)
 
-	if result == nil || result.CreateSubOrganizationResult == nil || result.CreateSubOrganizationResult.SubOrganizationID == nil {
-		return "", fmt.Errorf("expected a non-empty CreateSubOrganizationResult. Got: %+v", result)
+	if result == nil || result.CreateSubOrganizationResultV3 == nil || result.CreateSubOrganizationResultV3.SubOrganizationID == nil {
+		return nil, fmt.Errorf("expected a non-empty CreateSubOrganizationResultV3. Got: %+v", result)
 	}
-	subOrganizationId := result.CreateSubOrganizationResult.SubOrganizationID
 
-	return *subOrganizationId, nil
+	if len(result.CreateSubOrganizationResultV3.PrivateKeys) != 1 {
+		return nil, fmt.Errorf("expected one private key in the sub-org creation result. Got: %d", len(result.CreateSubOrganizationResultV3.PrivateKeys))
+	}
+	if len(result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses) != 1 {
+		return nil, fmt.Errorf("expected one private key with a single address. Got: %d addresses", len(result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses))
+	}
+
+	return &CreateSubOrganizationResult{
+		SubOrganizationId: *result.CreateSubOrganizationResultV3.SubOrganizationID,
+		PrivateKeyId:      result.CreateSubOrganizationResultV3.PrivateKeys[0].PrivateKeyID,
+		EthereumAddress:   result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses[0].Address,
+	}, nil
 }
 
 func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte, error) {
@@ -200,40 +234,6 @@ func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte,
 		return []byte{}, errors.Wrap(err, "cannot marshal sub-org data")
 	}
 	return data, nil
-}
-
-// Creates a new Private Key with an Ethereum address, and returns the Private Key ID.
-func (c *TurnkeyApiClient) CreateEthereumKey(subOrganizationId string) (string, error) {
-	timestamp := util.RequestTimestamp()
-	name := fmt.Sprintf("Ethereum Key - %s", *timestamp)
-
-	p := private_keys.NewPublicAPIServiceCreatePrivateKeysParams().WithBody(&models.V1CreatePrivateKeysRequest{
-		OrganizationID: &subOrganizationId,
-		Parameters: &models.V1CreatePrivateKeysIntent{
-			PrivateKeys: []*models.V1PrivateKeyParams{{
-				AddressFormats: []models.Immutableactivityv1AddressFormat{
-					models.Immutableactivityv1AddressFormatADDRESSFORMATETHEREUM,
-				},
-				Curve:          models.Immutableactivityv1CurveCURVESECP256K1.Pointer(),
-				PrivateKeyName: &name,
-				PrivateKeyTags: []string{},
-			}},
-		},
-		TimestampMs: timestamp,
-		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPECREATEPRIVATEKEYS.Pointer()),
-	})
-
-	activityResponse, err := c.Client.PrivateKeys.PublicAPIServiceCreatePrivateKeys(p, c.GetAuthenticator())
-	if err != nil {
-		return "", err
-	}
-
-	result, err := c.WaitForResult(subOrganizationId, *activityResponse.Payload.Activity.ID)
-	if err != nil {
-		return "", err
-	}
-
-	return result.CreatePrivateKeysResult.PrivateKeyIds[0], nil
 }
 
 // Takes an unsigned ETH payload and tries to sign it.

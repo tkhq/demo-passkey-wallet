@@ -149,32 +149,18 @@ func main() {
 			return
 		}
 
-		subOrganizationId, err := turnkey.Client.CreateUserSubOrganization(requestBody.Email, requestBody.Attestation, requestBody.Challenge)
+		subOrgResult, err := turnkey.Client.CreateUserSubOrganization(requestBody.Email, requestBody.Attestation, requestBody.Challenge)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		if _, err = models.UpdateUserTurnkeySubOrganization(user.ID, subOrganizationId); err != nil {
+		if _, err = models.UpdateUserTurnkeySubOrganization(user.ID, subOrgResult.SubOrganizationId); err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		// Now create a new private key
-		privateKeyId, err := turnkey.Client.CreateEthereumKey(subOrganizationId)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err.Error())
-			return
-		}
-
-		address, err := turnkey.Client.GetEthereumAddress(subOrganizationId, privateKeyId)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err.Error())
-			return
-		}
-		fmt.Printf("Private key successfully created: %s (address: %s)", privateKeyId, address)
-
-		pk, err := models.SavePrivateKeyForUser(user, privateKeyId, address)
+		pk, err := models.SavePrivateKeyForUser(user, subOrgResult.PrivateKeyId, subOrgResult.EthereumAddress)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
