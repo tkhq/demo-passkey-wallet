@@ -6,7 +6,6 @@ import { Footer } from '@/components/Footer';
 import Image from 'next/image';
 import { useAuth } from '@/components/context/auth.context';
 import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
-import { browserInit } from '@turnkey/http';
 import { TSignTransactionInput, signSignTransaction } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import axios from 'axios';
 import Link from 'next/link';
@@ -16,10 +15,6 @@ import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import { AuthWidget } from '@/components/AuthWidget';
 import { History } from '@/components/History';
-
-browserInit({
-  baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-});
 
 type resource = {
   data: any,

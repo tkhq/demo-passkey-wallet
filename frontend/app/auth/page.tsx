@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { browserInit, getWebAuthnAttestation } from '@turnkey/http'
+import { getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { authenticateUrl, registerUrl, registrationStatusUrl, whoamiUrl } from "../../utils/urls"
@@ -11,10 +11,6 @@ import { TGetWhoamiInput, signGetWhoami } from '@turnkey/http/dist/__generated__
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import Link from 'next/link';
-
-browserInit({
-  baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-});
 
 const DEMO_PASSKEY_WALLET_RPID = process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
 
