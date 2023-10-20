@@ -38,5 +38,6 @@ type TurnkeyStamp struct {
 }
 
 type RecoveryParams struct {
-	Email string `json:"email" binding:"required"`
+	Email           string `json:"email" binding:"required"`
+	TargetPublicKey string `json:"targetPublicKey" binding:"required"`
 }

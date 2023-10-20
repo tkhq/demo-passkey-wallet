@@ -1,16 +1,16 @@
 'use client'
 
 import Image from 'next/image'
-import { getWebAuthnAttestation } from '@turnkey/http'
+import { TurnkeyClient, getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { authenticateUrl, registerUrl, registrationStatusUrl, whoamiUrl } from "../../utils/urls"
 import { useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
-import { TGetWhoamiInput, signGetWhoami } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
 import { useEffect, useState } from 'react';
 import { useSWRConfig } from 'swr';
 import Link from 'next/link';
+import { WebauthnStamper } from '@turnkey/webauthn-stamper';
 
 const DEMO_PASSKEY_WALLET_RPID = process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
 
@@ -94,15 +94,19 @@ async function subOrganizationIdForEmail(email: string): Promise<string|null> {
 // The backend will then forward to Turnkey and get a response on whether the stamp was valid.
 // If this is successful, our backend will issue a logged in session.
 async function authenticate(subOrganizationId: string) {
-  const whoamiInput: TGetWhoamiInput = {
-    body: {
-      organizationId: subOrganizationId,
-    }
-  }
-  const signedWhoamiRequest = await signGetWhoami(whoamiInput);
+  const stamper = new WebauthnStamper({
+    rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
+  });
+  const client = new TurnkeyClient({
+    baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+  }, stamper)
+
+  const signedRequest = await client.stampGetWhoami({
+    organizationId: subOrganizationId
+  })
 
   const res = await axios.post(authenticateUrl(), {
-    signedWhoamiRequest: signedWhoamiRequest,
+    signedWhoamiRequest: signedRequest,
   }, { withCredentials: true });
 
   if (res.status === 200) {
@@ -215,7 +219,8 @@ async function signup(email: string) {
             </div>
           </form>
         </div>
-        <Link className="block w-full text-center mt-4" href={"/"}>Go back home</Link>
+        <Link className="block w-full text-center mt-0" href={"/recovery"}>Lost access to your passkey? Recover your wallet here.</Link>
+        <Link className="block w-full text-center mt-6" href={"/"}>Go back home</Link>
       </div>
     </main>
   )

@@ -5,7 +5,6 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 interface RecoveryProps {
   iframeUrl: string;
-  turnkeyBaseUrl: string;
   setIframeStamper: Dispatch<SetStateAction<IframeStamper | null>>;
 }
 
@@ -19,6 +18,11 @@ export function Recovery(props: RecoveryProps) {
 
   useEffect(() => {
     if (!iframeStamper) {
+      // TODO: should this be part of the IframeStamper?
+      if (document.getElementById(TurnkeyIframeElementId) !== null) {
+        document.getElementById(TurnkeyIframeElementId)?.remove()
+      }
+
       const iframeStamper = new IframeStamper({
         iframeUrl: props.iframeUrl,
         iframeContainerId: TurnkeyIframeContainerId,

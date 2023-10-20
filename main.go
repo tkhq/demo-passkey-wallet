@@ -413,12 +413,17 @@ func main() {
 			ctx.String(http.StatusForbidden, "no user found")
 			return
 		}
+		subOrganizationId := user.SubOrganizationId.String
 
-		fmt.Printf("%+v", user)
+		turnkeyUserUuid, err := turnkey.Client.InitRecovery(subOrganizationId, user.Email, params.TargetPublicKey)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, fmt.Sprintf("error while initializing recovery: %s", err.Error()))
+			return
+		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"userId":         "TODO",
-			"organizationId": "TODO",
+			"userId":         turnkeyUserUuid,
+			"organizationId": subOrganizationId,
 		})
 	})
 
