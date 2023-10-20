@@ -6,7 +6,7 @@ import { Footer } from '@/components/Footer';
 import Image from 'next/image';
 import { useAuth } from '@/components/context/auth.context';
 import { constructTxUrl, getSubOrganizationUrl, getWalletUrl, sendTxUrl } from '@/utils/urls';
-import { TSignTransactionInput, signSignTransaction } from '@turnkey/http/dist/__generated__/services/coordinator/public/v1/public_api.fetcher';
+import { WebauthnStamper } from '@turnkey/webauthn-stamper'
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import { AuthWidget } from '@/components/AuthWidget';
 import { History } from '@/components/History';
+import { TurnkeyClient } from '@turnkey/http';
 
 type resource = {
   data: any,
@@ -84,23 +85,27 @@ export default function Dashboard() {
       return
     }
 
+    const stamper = new WebauthnStamper({
+      rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!
+    });
+    const client = new TurnkeyClient({
+      baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+    }, stamper);
+
     // Now let's sign this!
-    const signTransactionInput: TSignTransactionInput = {
-      body: {
-        type: "ACTIVITY_TYPE_SIGN_TRANSACTION",
-        organizationId: constructRes.data["organizationId"],
-        timestampMs: Date.now().toString(),
-        parameters: {
-          privateKeyId: constructRes.data["privateKeyId"],
-          unsignedTransaction: constructRes.data["unsignedTransaction"],
-          type: "TRANSACTION_TYPE_ETHEREUM"
-        }
+    const signedTransaction = await client.stampSignTransaction({
+      type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
+      organizationId: constructRes.data["organizationId"],
+      timestampMs: Date.now().toString(),
+      parameters: {
+        signWith: constructRes.data["address"],
+        unsignedTransaction: constructRes.data["unsignedTransaction"],
+        type: "TRANSACTION_TYPE_ETHEREUM"
       }
-    }
-    const signedRequest = await signSignTransaction(signTransactionInput);
+    });
 
     const sendRes = await axios.post(sendTxUrl(), {
-      signedSendTx: signedRequest,
+      signedSendTx: signedTransaction,
       destination: data.destination,
     }, { withCredentials: true });
 

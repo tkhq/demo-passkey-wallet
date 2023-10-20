@@ -45,4 +45,8 @@ export function sendTxUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/send-tx"
 }
 
+export function initEmailRecoveryUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/init-recovery"
+}
+
 

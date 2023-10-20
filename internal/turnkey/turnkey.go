@@ -40,9 +40,9 @@ type TurnkeyApiClient struct {
 // Custom type to hold results from a sub-org creation result
 type CreateSubOrganizationResult struct {
 	SubOrganizationId string
-	// Note: we _could_ create more than 1 private key per sub-org
+	WalletId          string
+	// Note: we _could_ create more than 1 address per sub-org
 	// But we don't want to right now.
-	PrivateKeyId    string
 	EthereumAddress string
 }
 
@@ -79,17 +79,13 @@ func (c *TurnkeyApiClient) Whoami() (string, error) {
 
 // Method to forward signed requests to Turnkey.
 // TODO: should be part of the Go SDK!
-func (c *TurnkeyApiClient) ForwardSignedRequest(url, requestBody, stamp string, isWebauthnStamp bool) (int, []byte, error) {
+func (c *TurnkeyApiClient) ForwardSignedRequest(url string, requestBody string, stamp types.TurnkeyStamp) (int, []byte, error) {
 	bodyBytes := []byte(requestBody)
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		return 0, []byte{}, errors.Wrap(err, "cannot create HTTP request")
 	}
-	if isWebauthnStamp {
-		req.Header.Set("X-Stamp-WebAuthn", stamp)
-	} else {
-		req.Header.Set("X-Stamp", stamp)
-	}
+	req.Header.Set(stamp.StampHeaderName, stamp.StampHeaderValue)
 	client := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -123,30 +119,29 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 
 	// TODO: this should accept normal ints!
 	rootQuorumThreshold := int32(1)
-	// TODO: this should be automatically filled based on Param type.
-	activityType := "ACTIVITY_TYPE_CREATE_SUB_ORGANIZATION_V3"
 
 	credentialId := attestation.CredentialId
 	clientDataJson := attestation.ClientDataJson
 	attestationObject := attestation.AttestationObject
-	apiPublicKey := c.APIKey.TkPublicKey
 	timestamp := util.RequestTimestamp()
-	ethereumKeyName := fmt.Sprintf("Ethereum Key - %s", *timestamp)
+	ethereumWalletName := fmt.Sprintf("Ethereum Wallet - %s", *timestamp)
+	ethereumDerivationPath := "m/44'/60'/0'/0/0"
 
 	p := organizations.NewPublicAPIServiceCreateSubOrganizationParams().WithBody(&models.V1CreateSubOrganizationRequest{
 		OrganizationID: &c.OrganizationID,
-		Parameters: &models.V1CreateSubOrganizationIntentV3{
+		Parameters: &models.V1CreateSubOrganizationIntentV4{
 			SubOrganizationName: &subOrganizationName,
 			RootQuorumThreshold: &rootQuorumThreshold,
-			PrivateKeys: []*models.V1PrivateKeyParams{
-				{
-					AddressFormats: []models.Immutableactivityv1AddressFormat{
-						models.Immutableactivityv1AddressFormatADDRESSFORMATETHEREUM,
+			Wallet: &models.V1WalletParams{
+				Accounts: []*models.V1WalletAccountParams{
+					{
+						AddressFormat: models.Immutablecommonv1AddressFormatADDRESSFORMATETHEREUM.Pointer(),
+						Curve:         models.Immutablecommonv1CurveCURVESECP256K1.Pointer(),
+						Path:          &ethereumDerivationPath,
+						PathFormat:    models.V1PathFormatPATHFORMATBIP32.Pointer(),
 					},
-					Curve:          models.Immutableactivityv1CurveCURVESECP256K1.Pointer(),
-					PrivateKeyName: &ethereumKeyName,
-					PrivateKeyTags: []string{},
 				},
+				WalletName: &ethereumWalletName,
 			},
 			RootUsers: []*models.V1RootUserParams{
 				{
@@ -170,21 +165,11 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 						},
 					},
 				},
-				{
-					UserName:  func() *string { s := "Onboarding Helper"; return &s }(),
-					UserEmail: "",
-					APIKeys: []*models.V1APIKeyParams{
-						{
-							APIKeyName: func() *string { s := "Wallet Backend"; return &s }(),
-							PublicKey:  &apiPublicKey,
-						},
-					},
-					Authenticators: []*models.V1AuthenticatorParamsV2{},
-				},
 			},
 		},
 		TimestampMs: timestamp,
-		Type:        &activityType,
+		// TODO: this should be automatically filled based on Param type.
+		Type: (*string)(models.V1ActivityTypeACTIVITYTYPECREATESUBORGANIZATIONV4.Pointer()),
 	})
 
 	response, err := c.Client.Organizations.PublicAPIServiceCreateSubOrganization(p, c.GetAuthenticator())
@@ -201,21 +186,21 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 	}
 	fmt.Printf("activity %s completed\n", *response.Payload.Activity.ID)
 
-	if result == nil || result.CreateSubOrganizationResultV3 == nil || result.CreateSubOrganizationResultV3.SubOrganizationID == nil {
-		return nil, fmt.Errorf("expected a non-empty CreateSubOrganizationResultV3. Got: %+v", result)
+	if result == nil || result.CreateSubOrganizationResultV4 == nil || result.CreateSubOrganizationResultV4.SubOrganizationID == nil {
+		return nil, fmt.Errorf("expected a non-empty CreateSubOrganizationResultV4. Got: %+v", result)
 	}
 
-	if len(result.CreateSubOrganizationResultV3.PrivateKeys) != 1 {
-		return nil, fmt.Errorf("expected one private key in the sub-org creation result. Got: %d", len(result.CreateSubOrganizationResultV3.PrivateKeys))
+	if result.CreateSubOrganizationResultV4.Wallet == nil {
+		return nil, fmt.Errorf("expected a wallet in CreateSubOrganizationResultV4. Got none: %+v", result)
 	}
-	if len(result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses) != 1 {
-		return nil, fmt.Errorf("expected one private key with a single address. Got: %d addresses", len(result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses))
+	if len(result.CreateSubOrganizationResultV4.Wallet.Addresses) != 1 {
+		return nil, fmt.Errorf("expected one address in the sub-org creation result. Got: %d", len(result.CreateSubOrganizationResultV4.Wallet.Addresses))
 	}
 
 	return &CreateSubOrganizationResult{
-		SubOrganizationId: *result.CreateSubOrganizationResultV3.SubOrganizationID,
-		PrivateKeyId:      result.CreateSubOrganizationResultV3.PrivateKeys[0].PrivateKeyID,
-		EthereumAddress:   result.CreateSubOrganizationResultV3.PrivateKeys[0].Addresses[0].Address,
+		SubOrganizationId: *result.CreateSubOrganizationResultV4.SubOrganizationID,
+		WalletId:          *result.CreateSubOrganizationResultV4.Wallet.WalletID,
+		EthereumAddress:   result.CreateSubOrganizationResultV4.Wallet.Addresses[0],
 	}, nil
 }
 
@@ -238,14 +223,14 @@ func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte,
 
 // Takes an unsigned ETH payload and tries to sign it.
 // On success, the signed transaction is returned. On failure, an error is returned.
-func (c *TurnkeyApiClient) SignTransaction(organizationId string, privateKeyId string, unsignedTransaction string) (string, error) {
+func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith string, unsignedTransaction string) (string, error) {
 	timestamp := util.RequestTimestamp()
 
 	p := private_keys.NewPublicAPIServiceSignTransactionParams().WithBody(&models.V1SignTransactionRequest{
 		OrganizationID: &organizationId,
-		Parameters: &models.V1SignTransactionIntent{
-			PrivateKeyID:        &privateKeyId,
-			Type:                models.Immutableactivityv1TransactionTypeTRANSACTIONTYPEETHEREUM.Pointer(),
+		Parameters: &models.V1SignTransactionIntentV2{
+			SignWith:            &signWith,
+			Type:                models.V1TransactionTypeTRANSACTIONTYPEETHEREUM.Pointer(),
 			UnsignedTransaction: &unsignedTransaction,
 		},
 		TimestampMs: timestamp,
@@ -266,6 +251,7 @@ func (c *TurnkeyApiClient) SignTransaction(organizationId string, privateKeyId s
 }
 
 // Gets the Ethereum address for a private key ID created on Turnkey
+// This is only used to pull one address: the warchest private key address
 func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId string) (string, error) {
 	p := private_keys.NewPublicAPIServiceGetPrivateKeyParams().WithBody(&models.V1GetPrivateKeyRequest{
 		OrganizationID: &organizationId,
@@ -278,6 +264,33 @@ func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId strin
 	}
 
 	return resp.Payload.PrivateKey.Addresses[0].Address, nil
+}
+
+// Starts recovery for a given sub-organization
+// The backend API key can do this because parent organizations are allowed to initiate recovery for their sub-orgs.
+// Any (API) user which has the ability to perform ACTIVITY_TYPE_INIT_USER_EMAIL_RECOVERY in the parent can thus target the sub-organizations as well.
+func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKey string) (string, error) {
+	p := organizations.NewPublicAPIServiceInitUserEmailRecoveryParams().WithBody(&models.V1InitUserEmailRecoveryRequest{
+		OrganizationID: &subOrganizationId,
+		Parameters: &models.V1InitUserEmailRecoveryIntent{
+			Email:           &email,
+			TargetPublicKey: &targetPublicKey,
+		},
+		TimestampMs: util.RequestTimestamp(),
+		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPEINITUSEREMAILRECOVERY.Pointer()),
+	})
+
+	activityResponse, err := c.Client.Organizations.PublicAPIServiceInitUserEmailRecovery(p, c.GetAuthenticator())
+	if err != nil {
+		return "", err
+	}
+
+	result, err := c.WaitForResult(subOrganizationId, *activityResponse.Payload.Activity.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return *result.InitUserEmailRecoveryResult.UserID, nil
 }
 
 // Utility to wait for an activity result

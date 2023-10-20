@@ -9,7 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@turnkey/http": "^1.0.0",
+    "@turnkey/http": "https://pkg.csb.dev/tkhq/sdk/commit/dca8c91e/@turnkey/http",
+    "@turnkey/webauthn-stamper": "https://pkg.csb.dev/tkhq/sdk/commit/dca8c91e/@turnkey/webauthn-stamper",
+    "@turnkey/iframe-stamper": "https://pkg.csb.dev/tkhq/sdk/commit/dca8c91e/@turnkey/iframe-stamper",
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",

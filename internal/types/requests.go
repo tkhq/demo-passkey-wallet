@@ -29,5 +29,14 @@ type SendTxParams struct {
 type SignedTurnkeyRequest struct {
 	Url   string
 	Body  string
-	Stamp string
+	Stamp TurnkeyStamp `json:"stamp" binding:"required"`
+}
+
+type TurnkeyStamp struct {
+	StampHeaderName  string
+	StampHeaderValue string
+}
+
+type RecoveryParams struct {
+	Email string `json:"email" binding:"required"`
 }

@@ -8,7 +8,7 @@ require (
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/heroku/x v0.0.57
-	github.com/tkhq/go-sdk v0.0.0-20230905150854-bd06cc41b24d
+	github.com/tkhq/go-sdk v0.0.0-20231019192605-74e0691ce598
 )
 
 require (

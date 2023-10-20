@@ -160,7 +160,7 @@ func main() {
 			return
 		}
 
-		pk, err := models.SavePrivateKeyForUser(user, subOrgResult.PrivateKeyId, subOrgResult.EthereumAddress)
+		pk, err := models.SaveWalletForUser(user, subOrgResult.WalletId, subOrgResult.EthereumAddress)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
@@ -178,7 +178,7 @@ func main() {
 			return
 		}
 
-		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp, true)
+		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
 		if err != nil {
 			err = errors.Wrap(err, "error while forwarding signed whoami request")
 			ctx.JSON(http.StatusInternalServerError, err.Error())
@@ -231,23 +231,23 @@ func main() {
 			ctx.String(http.StatusForbidden, "no current user")
 			return
 		}
-		privateKey, err := models.GetPrivateKeyForUser(*user)
+		wallet, err := models.GetWalletForUser(*user)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
 			return
 		}
 
-		balance, err := ethereum.GetBalance(privateKey.EthereumAddress)
+		balance, err := ethereum.GetBalance(wallet.EthereumAddress)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve balance").Error())
 			return
 		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"address":     privateKey.EthereumAddress,
-			"turnkeyUuid": privateKey.TurnkeyUUID,
+			"address":     wallet.EthereumAddress,
+			"turnkeyUuid": wallet.TurnkeyUUID,
 			"balance":     formatBalance(balance),
-			"dropsLeft":   privateKey.DropsLeft(),
+			"dropsLeft":   wallet.DropsLeft(),
 		})
 	})
 
@@ -257,18 +257,18 @@ func main() {
 			ctx.String(http.StatusForbidden, "no current user")
 			return
 		}
-		privateKey, err := models.GetPrivateKeyForUser(*user)
+		wallet, err := models.GetWalletForUser(*user)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
 			return
 		}
 
-		if privateKey.DropsLeft() <= 0 {
+		if wallet.DropsLeft() <= 0 {
 			ctx.String(http.StatusForbidden, "No more drops left!")
 			return
 		}
 
-		unsignedDropTx, err := ethereum.ConstructTransfer(turnkeyWarchestPrivateKeyAddress, privateKey.EthereumAddress, big.NewInt(DROP_AMOUNT_IN_WEI))
+		unsignedDropTx, err := ethereum.ConstructTransfer(turnkeyWarchestPrivateKeyAddress, wallet.EthereumAddress, big.NewInt(DROP_AMOUNT_IN_WEI))
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct drop transfer").Error())
 			return
@@ -285,7 +285,7 @@ func main() {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to broadcast drop transfer").Error())
 		}
 
-		err = models.RecordDropForPrivateKey(privateKey)
+		err = models.RecordDropForWallet(wallet)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to persist drop in DB").Error())
 		}
@@ -313,7 +313,7 @@ func main() {
 			return
 		}
 
-		privateKey, err := models.GetPrivateKeyForUser(*user)
+		wallet, err := models.GetWalletForUser(*user)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
 			return
@@ -325,7 +325,7 @@ func main() {
 			return
 		}
 
-		unsignedTransaction, err := ethereum.ConstructTransfer(privateKey.EthereumAddress, params.Destination, big.NewInt(int64(amount*float64(ONE_ETH_IN_WEI))))
+		unsignedTransaction, err := ethereum.ConstructTransfer(wallet.EthereumAddress, params.Destination, big.NewInt(int64(amount*float64(ONE_ETH_IN_WEI))))
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct transaction").Error())
 			return
@@ -333,7 +333,7 @@ func main() {
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
 			"unsignedTransaction": hex.EncodeToString(unsignedTransaction),
-			"privateKeyId":        privateKey.TurnkeyUUID,
+			"address":             wallet.EthereumAddress,
 			"organizationId":      user.SubOrganizationId.String,
 		})
 	})
@@ -353,7 +353,7 @@ func main() {
 		}
 
 		status, responseBytes, err := turnkey.Client.ForwardSignedRequest(
-			params.SignedSendTx.Url, params.SignedSendTx.Body, params.SignedSendTx.Stamp, true)
+			params.SignedSendTx.Url, params.SignedSendTx.Body, params.SignedSendTx.Stamp)
 
 		if err != nil {
 			err = errors.Wrap(err, "error while forwarding signed send transaction request")
@@ -386,18 +386,40 @@ func main() {
 			return
 		}
 
-		privateKey, err := models.GetPrivateKeyForUser(*user)
+		wallet, err := models.GetWalletForUser(*user)
 		if err != nil {
-			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve key for current user").Error())
+			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to retrieve wallet for current user").Error())
 			return
 		}
 
-		history, err := alchemy.TransactionHistory(privateKey.EthereumAddress)
+		history, err := alchemy.TransactionHistory(wallet.EthereumAddress)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to get transaction history").Error())
 			return
 		}
 		ctx.JSON(http.StatusOK, history)
+	})
+
+	router.POST("/api/init-recovery", func(ctx *gin.Context) {
+		var params types.RecoveryParams
+		err := ctx.BindJSON(&params)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		user, err := models.FindUserByEmail(params.Email)
+		if err != nil {
+			ctx.String(http.StatusForbidden, "no user found")
+			return
+		}
+
+		fmt.Printf("%+v", user)
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"userId":         "TODO",
+			"organizationId": "TODO",
+		})
 	})
 
 	router.Run(":" + port)
@@ -460,7 +482,7 @@ func endUserSession(ctx *gin.Context) {
 
 func loadDatabase() {
 	db.Connect()
-	db.Database.AutoMigrate(&models.User{}, &models.PrivateKey{})
+	db.Database.AutoMigrate(&models.User{}, &models.Wallet{})
 }
 
 func loadEnv() {

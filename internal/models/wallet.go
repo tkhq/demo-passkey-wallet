@@ -9,7 +9,7 @@ const MAX_DROPS_PER_KEY uint8 = 10
 
 // Represents a Turnkey private key, created by our backend on behalf of a user
 // This private key is bound to a user via Turnkey Policies.
-type PrivateKey struct {
+type Wallet struct {
 	gorm.Model
 	User            User
 	UserID          int
@@ -18,7 +18,7 @@ type PrivateKey struct {
 	Drops           uint8  `gorm:"default:0"`
 }
 
-func (pk *PrivateKey) DropsLeft() uint8 {
+func (pk *Wallet) DropsLeft() uint8 {
 	if pk.Drops > MAX_DROPS_PER_KEY {
 		return 0
 	} else {
@@ -26,10 +26,10 @@ func (pk *PrivateKey) DropsLeft() uint8 {
 	}
 }
 
-func SavePrivateKeyForUser(u *User, privateKeyId, address string) (*PrivateKey, error) {
-	pk := PrivateKey{
+func SaveWalletForUser(u *User, walletId, address string) (*Wallet, error) {
+	pk := Wallet{
 		User:            *u,
-		TurnkeyUUID:     privateKeyId,
+		TurnkeyUUID:     walletId,
 		EthereumAddress: address,
 	}
 	err := db.Database.Create(&pk).Error
@@ -39,16 +39,16 @@ func SavePrivateKeyForUser(u *User, privateKeyId, address string) (*PrivateKey, 
 	return &pk, err
 }
 
-func GetPrivateKeyForUser(u User) (*PrivateKey, error) {
-	var privateKey PrivateKey
-	err := db.Database.Where("user_id=?", u.ID).Find(&privateKey).Error
+func GetWalletForUser(u User) (*Wallet, error) {
+	var wallet Wallet
+	err := db.Database.Where("user_id=?", u.ID).Find(&wallet).Error
 	if err != nil {
 		return nil, err
 	}
-	return &privateKey, nil
+	return &wallet, nil
 }
 
-func RecordDropForPrivateKey(pk *PrivateKey) error {
+func RecordDropForWallet(pk *Wallet) error {
 	dropsCount := pk.Drops + 1
 	return db.Database.Find(pk).Update("drops", dropsCount).Error
 }
