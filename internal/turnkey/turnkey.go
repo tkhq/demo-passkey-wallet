@@ -234,7 +234,7 @@ func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith strin
 			UnsignedTransaction: &unsignedTransaction,
 		},
 		TimestampMs: timestamp,
-		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPESIGNTRANSACTION.Pointer()),
+		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPESIGNTRANSACTIONV2.Pointer()),
 	})
 
 	activityResponse, err := c.Client.PrivateKeys.PublicAPIServiceSignTransaction(p, c.GetAuthenticator())
