@@ -14,7 +14,6 @@ export function Recovery(props: RecoveryProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
-
   const [iframeDisplay, setIframeDisplay] = useState("none");
 
   useEffect(() => {
@@ -45,7 +44,7 @@ export function Recovery(props: RecoveryProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.code == "KeyI") {
+        if (e.code == "KeyI" && e.metaKey == true) {
             if (iframeDisplay == "block") {
                 setIframeDisplay("none");
             } else {
