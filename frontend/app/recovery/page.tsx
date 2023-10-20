@@ -201,11 +201,6 @@ export default function RecoveryPage() {
           <h2 className="mt-4 text-center text-3xl favorit leading-9 tracking-tight text-zinc-900">Recover Your Wallet</h2>
         </div>
 
-        <Recovery
-          setIframeStamper={setIframeStamper}
-          iframeUrl={process.env.NEXT_PUBLIC_RECOVERY_IFRAME_URL!}
-        ></Recovery>
-
         <div className="mt-10">
           {!iframeStamper && !recoverUserInfo && (
             <p className="space-y-4 p-4 max-w-lg mx-auto text-center">loading...</p>
@@ -269,6 +264,11 @@ export default function RecoveryPage() {
           )}
         </div>
         <Link className="block w-full text-center mt-4" href={"/"}>Go back home</Link>
+
+        <Recovery
+          setIframeStamper={setIframeStamper}
+          iframeUrl={process.env.NEXT_PUBLIC_RECOVERY_IFRAME_URL!}
+        ></Recovery>
       </div>
     </main>
   )

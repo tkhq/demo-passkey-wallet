@@ -1,5 +1,4 @@
 "use client";
-
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
@@ -15,6 +14,8 @@ export function Recovery(props: RecoveryProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
+
+  const [iframeDisplay, setIframeDisplay] = useState("none");
 
   useEffect(() => {
     if (!iframeStamper) {
@@ -42,5 +43,34 @@ export function Recovery(props: RecoveryProps) {
     };
   }, [props, iframeStamper, setIframeStamper]);
 
-  return <div style={{ display: "none" }} id={TurnkeyIframeContainerId}></div>;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.code == "KeyI") {
+            if (iframeDisplay == "block") {
+                setIframeDisplay("none");
+            } else {
+                setIframeDisplay("block");
+            }
+        }
+    };
+    document.addEventListener('keydown', handleKeyDown, false);
+
+    // remove the event listener as a cleanup step
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [iframeDisplay, setIframeDisplay]);
+
+  const iframeCss = `
+  iframe {
+      width: 100%;
+      height: 250px;
+  }
+  `;
+
+  return (
+    <div className="space-y-4 p-4 max-w-lg mx-auto" style={{ display: iframeDisplay }} id={TurnkeyIframeContainerId}>
+          <style>{iframeCss}</style>
+    </div>
+  )
 }
