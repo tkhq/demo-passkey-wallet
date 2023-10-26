@@ -41,3 +41,7 @@ type RecoveryParams struct {
 	Email           string `json:"email" binding:"required"`
 	TargetPublicKey string `json:"targetPublicKey" binding:"required"`
 }
+
+type RecoverRequest struct {
+	SignedRecoverRequest SignedTurnkeyRequest `json:"signedRecoverRequest" binding:"required"`
+}

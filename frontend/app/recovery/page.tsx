@@ -5,7 +5,7 @@ import { TurnkeyClient, getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
 import { ErrorMessage } from '@hookform/error-message';
-import { initEmailRecoveryUrl } from "../../utils/urls"
+import { initEmailRecoveryUrl, recoverUrl } from "../../utils/urls"
 import { validateAuthenticatorLabel } from "../../utils/validation"
 import { useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
@@ -149,7 +149,7 @@ export default function RecoveryPage() {
       iframeStamper
     );
 
-    const response = await client.recoverUser({
+    const signedRequest = await client.stampRecoverUser({
       type: "ACTIVITY_TYPE_RECOVER_USER",
       timestampMs: String(Date.now()),
       organizationId: recoverUserInfo.organizationId,
@@ -163,20 +163,21 @@ export default function RecoveryPage() {
       },
     });
 
-    // There is an interesting edge case here: if we poll using the recovery credential,
-    // it will fail as soon as the activity is successful!
-    // I think there is a strategy we can implement potentially:
-    // - assert that the status of the activity is "PENDING" or "COMPLETE". Anything else should be an error.
-    // - on subsequent polls, assert that the status is "PENDING" or that an error "no user found for authenticator" is returned
-    // When the error is returned it means the recovery has taken place (the recovery credential has been deleted from org data!)
-    // Another solution is to poll this using a read-only API key, from the backend (proxying)
-    console.log(response);
+    const res = await axios.post(recoverUrl(), {
+      signedRecoverRequest: signedRequest,
+    });
 
-    // Instead of simply alerting, redirect the user to your app's login page.
-    alert(
-      "SUCCESS! Authenticator added. Recovery flow complete. Try logging back in!"
-    );
-    window.location.replace("/auth")
+    if (res.status == 200) {
+      alert(
+        "SUCCESS! Authenticator added. Recovery flow complete. Try logging back in!"
+      );
+      window.location.replace("/auth")
+    } else {
+      console.error("unable to forward signed RECOVER_USER request to Turnkey: status code is " + res.status);
+      console.error(res);
+    }
+
+
   }
 
   return (

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
 	"github.com/tkhq/go-sdk"
 	"github.com/tkhq/go-sdk/pkg/api/client"
@@ -102,6 +103,45 @@ func (c *TurnkeyApiClient) ForwardSignedRequest(url string, requestBody string, 
 	}
 	fmt.Printf("successfully forwarded request %s. Response: %s (%d)\n", url, responseBody, res.StatusCode)
 	return res.StatusCode, responseBody, nil
+}
+
+// TODO: should be part of the Go SDK!
+// This function does something similar to `ForwardSignedRequest`, except it also polls until the activity is COMPLETE or FAILED
+// If that's not the case after 3 attempts, give up.
+func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string, stamp types.TurnkeyStamp) error {
+	activityStatus := "UNKNOWN"
+
+	for attempts := 0; attempts <= 3; attempts++ {
+		status, bodyBytes, err := c.ForwardSignedRequest(url, requestBody, stamp)
+		if err != nil {
+			return errors.Wrap(err, "error while forwarding signed request")
+		}
+
+		if status != 200 {
+			return fmt.Errorf("expected 200 when forwarding signed activity. Got status %d: %s", status, bodyBytes)
+		}
+
+		activityStatus = gjson.Get(string(bodyBytes), "activity.status").String()
+		switch activityStatus {
+		case string(models.V1ActivityStatusACTIVITYSTATUSCREATED):
+			continue
+		case string(models.V1ActivityStatusACTIVITYSTATUSPENDING):
+			continue
+		case string(models.V1ActivityStatusACTIVITYSTATUSCOMPLETED):
+			return nil
+		case string(models.V1ActivityStatusACTIVITYSTATUSCONSENSUSNEEDED):
+			return errors.New("Forwarded activity requires consensus")
+		case string(models.V1ActivityStatusACTIVITYSTATUSREJECTED):
+			return errors.New("Forwarded activity was rejected")
+		case string(models.V1ActivityStatusACTIVITYSTATUSFAILED):
+			return errors.New("Forwarded activity failed")
+		}
+
+		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
+		time.Sleep(200 * time.Duration(attempts) * time.Millisecond)
+	}
+
+	return fmt.Errorf("unable to forward request, activity is in %s status", activityStatus)
 }
 
 // This function creates a new sub-organization for a given user email.

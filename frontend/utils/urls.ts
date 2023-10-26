@@ -49,4 +49,6 @@ export function initEmailRecoveryUrl(): string {
     return BACKEND_API_BASE_URL + "/api/init-recovery"
 }
 
-
+export function recoverUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/recover"
+}

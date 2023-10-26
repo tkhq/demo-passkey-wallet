@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
@@ -425,6 +426,33 @@ func main() {
 			"userId":         turnkeyUserUuid,
 			"organizationId": subOrganizationId,
 		})
+	})
+
+	router.POST("/api/recover", func(ctx *gin.Context) {
+		var req types.RecoverRequest
+		err := ctx.BindJSON(&req)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		err = turnkey.Client.ForwardSignedActivity(req.SignedRecoverRequest.Url, req.SignedRecoverRequest.Body, req.SignedRecoverRequest.Stamp)
+		if err != nil {
+			if strings.Contains(err.Error(), "no valid user found for authenticator") && strings.Contains(err.Error(), "Got status 401") {
+				// This is a tad weird, but while forwarding `RECOVER_USER`` activities, the "success" indicator isn't the usual "ACTIVITY_STATUS_COMPLETE",
+				// because the credential used to authenticate the request (in the stamp) is the _temporary_ recovery credential.
+				// The `RECOVER_USER` activity deletes this temporary credential and adds the new passkey instead, which means it loses any privileges on the org,
+				// which includes having read access to anything! Hence we expect this authentication error to happen when the activity completes.
+				// Another, less awkward way to ensure the activity is actually complete would be to poll with our backend API key since it has read permissions.
+				ctx.JSON(http.StatusOK, map[string]interface{}{})
+				return
+			}
+			err = errors.Wrap(err, "error while forwarding signed RECOVER_USER activity")
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{})
 	})
 
 	router.Run(":" + port)
