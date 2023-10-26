@@ -213,11 +213,6 @@ export default function RecoveryPage() {
                   <input {...recoveryFormRegister("email")} disabled={disabledSubmit} placeholder="Enter your email" id="email" name="email" type="email" autoComplete="email" required className="block w-full rounded-md border-0 py-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
                 </div>
               </div>
-              <div className="text-xs text-center pb-4">
-                <code title={iframeStamper.publicKey()!}>
-                  Target Encryption Key: {iframeStamper.publicKey()!.substring(0, 30)}...
-                </code>
-              </div>
 
               <div>
                 <button type="submit" disabled={disabledSubmit} className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
@@ -245,11 +240,6 @@ export default function RecoveryPage() {
                   <div className="mt-2">
                     <input {...recoverFormRegister("authenticatorName")} placeholder="Name your new passkey" id="authenticatorName" name="authenticatorName" required className="block w-full rounded-md border-0 p-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
                   </div>
-                </div>
-                <div className="text-xs text-center pb-4">
-                  <code title={iframeStamper.publicKey()!}>
-                    Target Encryption Key: {iframeStamper.publicKey()!.substring(0, 30)}...
-                  </code>
                 </div>
 
                 <div>
