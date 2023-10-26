@@ -4,7 +4,9 @@ import Image from 'next/image'
 import { TurnkeyClient, getWebAuthnAttestation } from '@turnkey/http'
 import axios from 'axios';
 import { useForm } from "react-hook-form";
+import { ErrorMessage } from '@hookform/error-message';
 import { initEmailRecoveryUrl } from "../../utils/urls"
+import { validateAuthenticatorLabel } from "../../utils/validation"
 import { useAuth } from '@/components/context/auth.context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -51,7 +53,7 @@ export default function RecoveryPage() {
   const { state } = useAuth();
   const router = useRouter();
   const { register: recoveryFormRegister, handleSubmit: recoveryFormSubmit } = useForm<RecoveryFormData>();
-  const { register: recoverFormRegister, handleSubmit: recoverFormSubmit } = useForm<RecoverFormData>();
+  const { register: recoverFormRegister, formState: recoverFormState, handleSubmit: recoverFormSubmit} = useForm<RecoverFormData>();
 
   useEffect(() => {
     if (state.isLoggedIn === true) {
@@ -105,11 +107,10 @@ export default function RecoveryPage() {
       throw new Error("recoverUserInfo is null");
     }
 
-    let injected = await iframeStamper.injectRecoveryBundle(
-      data.bundle
-    );
-    if (injected !== true) {
-      throw new Error("unexpected error while injecting recovery bundle");
+    try {
+      await iframeStamper.injectRecoveryBundle(data.bundle);
+    } catch (e: any){
+      throw new Error("unexpected error while injecting recovery bundle: " + e.toString());
     }
 
     const challenge = generateRandomBuffer();
@@ -228,7 +229,7 @@ export default function RecoveryPage() {
               <div className="space-y-4 p-4 max-w-lg mx-auto text-center text-sm text-green-600 bg-green-100 border-solid border border-green-400">
                 <p>An email with your recovery code has been sent. <br/><b>Please do not close this tab before the end of the recovery process</b>.</p>
               </div>
-              <form className="space-y-4 p-4 max-w-lg mx-auto" action="#" method="POST" onSubmit={recoverFormSubmit(recover)}>
+              <form className="space-y-4 p-4 max-w-lg mx-auto" onSubmit={recoverFormSubmit(recover)}>
                 <div>
                   <label htmlFor="bundle" className="block text-sm font-medium leading-6 text-zinc-900">Recovery Code</label>
                   <div className="mt-2">
@@ -238,9 +239,15 @@ export default function RecoveryPage() {
                 <div>
                   <label htmlFor="authenticatorName" className="block text-sm font-medium leading-6 text-zinc-900">Passkey Name</label>
                   <div className="mt-2">
-                    <input {...recoverFormRegister("authenticatorName")} placeholder="Name your new passkey" id="authenticatorName" name="authenticatorName" required className="block w-full rounded-md border-0 p-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
+                    <input {...recoverFormRegister("authenticatorName", { validate: validateAuthenticatorLabel })} placeholder="Name your new passkey" id="authenticatorName" name="authenticatorName" required className="block w-full rounded-md border-0 p-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"/>
                   </div>
                 </div>
+
+                <ErrorMessage
+                  errors={recoverFormState.errors}
+                  name="authenticatorName"
+                  render={({ message }) => <p className="text-sm text-red-700">{message}</p>}
+                />
 
                 <div>
                   <button type="submit" disabled={disabledSubmit} className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
@@ -254,12 +261,12 @@ export default function RecoveryPage() {
           )}
         </div>
         <Link className="block w-full text-center mt-4" href={"/"}>Go back home</Link>
-
-        <Recovery
-          setIframeStamper={setIframeStamper}
-          iframeUrl={process.env.NEXT_PUBLIC_RECOVERY_IFRAME_URL!}
-        ></Recovery>
       </div>
+
+      <Recovery
+        setIframeStamper={setIframeStamper}
+        iframeUrl={process.env.NEXT_PUBLIC_RECOVERY_IFRAME_URL!}
+      ></Recovery>
     </main>
   )
 }

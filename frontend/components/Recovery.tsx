@@ -14,33 +14,33 @@ export function Recovery(props: RecoveryProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
+  const iframeUrl = props.iframeUrl;
+  const setParentIframeStamper = props.setIframeStamper;
   const [iframeDisplay, setIframeDisplay] = useState("none");
 
   useEffect(() => {
     if (!iframeStamper) {
-      // TODO: should this be part of the IframeStamper?
-      if (document.getElementById(TurnkeyIframeElementId) !== null) {
-        document.getElementById(TurnkeyIframeElementId)?.remove()
-      }
-
       const iframeStamper = new IframeStamper({
-        iframeUrl: props.iframeUrl,
+        iframeUrl: iframeUrl,
         iframeContainerId: TurnkeyIframeContainerId,
         iframeElementId: TurnkeyIframeElementId,
       });
+
       iframeStamper.init().then(() => {
         setIframeStamper(iframeStamper);
-        props.setIframeStamper(iframeStamper);
+        setParentIframeStamper(iframeStamper);
       });
     }
 
     return () => {
       if (iframeStamper) {
+        console.log("clearing iframe")
         iframeStamper.clear();
         setIframeStamper(null);
+        setParentIframeStamper(null)
       }
     };
-  }, [props, iframeStamper, setIframeStamper]);
+  }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
