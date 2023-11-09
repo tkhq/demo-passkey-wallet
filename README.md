@@ -69,6 +69,9 @@ $ pg_ctl -D /opt/homebrew/var/postgresql@14 -o "-p 5555" start
 # Create the local DB
 $ createdb -h localhost -p 5555 -U <username> demo-passkey-wallet
 
+# Create the DB
+$ createdb -p 5555 "demo-passkey-wallet"
+
 # You can check that the DB works by running:
 $ psql -p 5555 -d demo-passkey-wallet
 ```
@@ -102,6 +105,7 @@ $ cd frontend
 # Create your own .env.local file
 $ cp .env.example .env.local
 
+$ npm install
 $ npm run dev
 ```
 
