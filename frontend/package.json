@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@turnkey/http": "^2.0.0",
-    "@turnkey/webauthn-stamper": "^0.2.0",
+    "@turnkey/http": "^2.2.0",
+    "@turnkey/webauthn-stamper": "^0.3.0",
     "@turnkey/iframe-stamper": "^0.1.0",
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",

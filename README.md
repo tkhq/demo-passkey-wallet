@@ -64,7 +64,10 @@ $ brew install postgresql@14
 Start the DB:
 ```
 # Customize the DB port and name with your own local DB name/port
-$ pg_ctl -D /opt/homebrew/var/postgres -o "-p 5555" start
+$ pg_ctl -D /opt/homebrew/var/postgresql@14 -o "-p 5555" start
+
+# Create the local DB
+$ createdb -h localhost -p 5555 -U <username> demo-passkey-wallet
 
 # You can check that the DB works by running:
 $ psql -p 5555 -d demo-passkey-wallet
