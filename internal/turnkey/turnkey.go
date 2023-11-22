@@ -113,7 +113,10 @@ func (c *TurnkeyApiClient) ForwardSignedRequest(url string, requestBody string, 
 func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string, stamp types.TurnkeyStamp) ([]byte, error) {
 	activityStatus := "UNKNOWN"
 
-	for attempts := 0; attempts <= 3; attempts++ {
+	delay := 200
+	maxAttempts := 3
+
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		status, bodyBytes, err := c.ForwardSignedRequest(url, requestBody, stamp)
 		if err != nil {
 			return nil, errors.Wrap(err, "error while forwarding signed request")
@@ -141,7 +144,7 @@ func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string,
 		}
 
 		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
-		time.Sleep(200 * time.Duration(attempts) * time.Millisecond)
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("unable to forward request, activity is in %s status", activityStatus)
@@ -321,12 +324,10 @@ func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKe
 
 // Utility to wait for an activity result
 func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*models.Result, error) {
-	delay := 500
-	maxRetries := 5
+	delay := 200
+	maxAttempts := 3
 
-	for attempts := 0; attempts < maxRetries; attempts++ {
-		time.Sleep(time.Duration(delay) * time.Millisecond)
-
+	for attempts := 0; attempts < maxAttempts; attempts++ {
 		params := activities.NewGetActivityParams().WithBody(&models.GetActivityRequest{
 			ActivityID:     func() *string { return &activityId }(),
 			OrganizationID: &organizationId,
@@ -352,9 +353,12 @@ func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*mo
 		case models.ActivityStatusFailed:
 			return nil, errors.New("activity failed")
 		}
+
+		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
-	return nil, fmt.Errorf("activity %+v has not completed after %d attempts", activityId, maxRetries)
+	return nil, fmt.Errorf("activity %+v has not completed after %d attempts", activityId, maxAttempts)
 }
 
 func (c *TurnkeyApiClient) GetAuthenticator() *sdk.Authenticator {

@@ -107,7 +107,7 @@ export function ExportWallet(props: ExportWalletProps) {
                 id="agreement1"
                 checked={agreements["agreement1"]}
                 onChange={handleAgreementChange}
-                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 dark:focus:ring-zinc-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
               <label htmlFor="agreement1" className="text-justify px-4">You should never share your private key with anyone, including the Turnkey team. Turnkey will never ask you for your private key.</label>
               </li>              
@@ -117,7 +117,7 @@ export function ExportWallet(props: ExportWalletProps) {
                 id="agreement2"
                 checked={agreements["agreement2"]}
                 onChange={handleAgreementChange}
-                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 dark:focus:ring-zinc-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
               <label htmlFor="agreement2" className="text-justify px-4">You are responsible for the security of this private key and any assets associated with it.</label>
               </li>
@@ -127,7 +127,7 @@ export function ExportWallet(props: ExportWalletProps) {
                 id="agreement3"
                 checked={agreements["agreement3"]}
                 onChange={handleAgreementChange}
-                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 dark:focus:ring-zinc-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
               <label htmlFor="agreement3" className="text-justify px-4">Turnkey is not responsible for any other wallet software you may use with this private key.</label>
               </li>
