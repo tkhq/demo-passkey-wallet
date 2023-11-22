@@ -109,3 +109,26 @@ Use like this in your CSS:
     filter: blur(280px);
   }
 }
+
+/* Custom Checkbox Styles */
+.custom-checkbox {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 4px; /* Rounded corners */
+  background-color: transparent;
+  border: 2px solid #000; /* Black border */
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  display: none; /* Hide the default checkbox */
+}
+
+.custom-checkbox input[type="checkbox"]:checked + .checkbox-label {
+  background-color: #000; /* Black background when checked */
+  border-color: #000;
+}

@@ -1,0 +1,57 @@
+"use client";
+import { IframeStamper } from "@turnkey/iframe-stamper";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
+
+interface ExportProps {
+  iframeUrl: string;
+  iframeDisplay: string;
+  setIframeStamper: Dispatch<SetStateAction<IframeStamper | null>>;
+}
+
+const TurnkeyIframeContainerId = "turnkey-iframe-container-id";
+const TurnkeyIframeElementId = "turnkey-iframe-element-id";
+
+export function Export(props: ExportProps) {
+  const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
+    null
+  );
+  const iframeUrl = props.iframeUrl;
+  const setParentIframeStamper = props.setIframeStamper;
+
+  useEffect(() => {
+    if (!iframeStamper) {
+      const iframeStamper = new IframeStamper({
+        iframeUrl: iframeUrl,
+        iframeContainerId: TurnkeyIframeContainerId,
+        iframeElementId: TurnkeyIframeElementId,
+      });
+
+      iframeStamper.init().then(() => {
+        setIframeStamper(iframeStamper);
+        setParentIframeStamper(iframeStamper);
+      });
+    }
+
+    return () => {
+      if (iframeStamper) {
+        console.log("clearing iframe")
+        iframeStamper.clear();
+        setIframeStamper(null);
+        setParentIframeStamper(null)
+      }
+    };
+  }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
+
+  const iframeCss = `
+  iframe {
+      width: 100%;
+      height: 250px;
+  }
+  `;
+
+  return (
+    <div className="space-y-4 p-4 max-w-lg mx-auto" style={{ display: props.iframeDisplay }} id={TurnkeyIframeContainerId}>
+          <style>{iframeCss}</style>
+    </div>
+  )
+}

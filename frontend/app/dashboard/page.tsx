@@ -15,6 +15,8 @@ import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import { AuthWidget } from '@/components/AuthWidget';
 import { History } from '@/components/History';
+import { Modal } from '@/components/Modal';
+import { ExportWallet } from '@/components/ExportWallet';
 import { TurnkeyClient } from '@turnkey/http';
 
 type resource = {
@@ -45,6 +47,7 @@ export default function Dashboard() {
   const { state } = useAuth();
   const [disabledSend, setDisabledSend] = useState(false);
   const [txHash, setTxHash] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } = useForm<sendFormData>();
@@ -120,6 +123,14 @@ export default function Dashboard() {
     setDisabledSend(false)
   };
 
+  function openModal() {
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+  }
+
   if (keyError) {
     console.error("failed to load wallet information:", keyError)
   };
@@ -161,7 +172,7 @@ export default function Dashboard() {
             </div>
 
             <div className="col-auto col-span-5 lg:col-span-3 sm:col-span-5">
-              <p className="mb-4">
+              <div className="mb-4">
                 <span className="font-semibold mr-2">Address:</span>
                 <span className="font-mono">{key && key.data["address"]}</span>
                 <br/>
@@ -175,7 +186,26 @@ export default function Dashboard() {
                     priority
                   />
                   </Link> : null }
-              </p>
+                {key ? <div>
+                    <button className="text-indigo-600 cursor-pointer underline" onClick={openModal}>
+                      Export Wallet <Image
+                      className={`inline-block`}
+                      src="/export.svg"
+                      alt="->"
+                      width={20}
+                      height={20}
+                      priority
+                    />
+                    </button>
+                    <Modal show={isModalOpen} onClose={closeModal} >
+                      <ExportWallet
+                        walletId={key.data["turnkeyUuid"]}
+                        walletAddress={key.data["address"]}
+                        organizationId={key.data["turnkeyOrganizationId"]}
+                      />
+                    </Modal>
+                </div> : null }
+              </div>
               <p>
                 <span className="font-semibold mr-2">Balance:</span>
                 <span className="font-mono">{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>

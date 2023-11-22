@@ -1,12 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import { Inter } from 'next/font/google'
-import { AppProps } from 'next/app'
 import { AuthProvider } from '@/components/context/auth.context'
 import Head from 'next/head'
-import { AuthWidget } from '@/components/AuthWidget'
-import { usePathname } from 'next/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 

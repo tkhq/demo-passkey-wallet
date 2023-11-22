@@ -167,7 +167,7 @@ export default function RecoveryPage() {
       signedRecoverRequest: signedRequest,
     });
 
-    if (res.status == 200) {
+    if (res.status === 200) {
       alert(
         "SUCCESS! Authenticator added. Recovery flow complete. Try logging back in!"
       );

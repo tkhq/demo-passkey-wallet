@@ -37,6 +37,10 @@ type TurnkeyStamp struct {
 	StampHeaderValue string
 }
 
+type ExportRequest struct {
+	SignedExportRequest SignedTurnkeyRequest `json:"signedExportRequest" binding:"required"`
+}
+
 type RecoveryParams struct {
 	Email           string `json:"email" binding:"required"`
 	TargetPublicKey string `json:"targetPublicKey" binding:"required"`

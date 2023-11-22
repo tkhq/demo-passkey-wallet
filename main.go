@@ -207,25 +207,6 @@ func main() {
 		ctx.String(http.StatusNoContent, "")
 	})
 
-	router.GET("/api/suborganization", func(ctx *gin.Context) {
-		user := getCurrentUser(ctx)
-		if user == nil {
-			ctx.String(http.StatusForbidden, "no current user")
-			return
-		}
-
-		if !user.SubOrganizationId.Valid {
-			ctx.String(http.StatusInternalServerError, "null sub-organization id for current user")
-		} else {
-			subOrganization, err := turnkey.Client.GetSubOrganization(user.SubOrganizationId.String)
-			if err != nil {
-				ctx.String(http.StatusInternalServerError, err.Error())
-				return
-			}
-			ctx.Data(http.StatusOK, "application/json", subOrganization)
-		}
-	})
-
 	router.GET("/api/wallet", func(ctx *gin.Context) {
 		user := getCurrentUser(ctx)
 		if user == nil {
@@ -245,10 +226,11 @@ func main() {
 		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"address":     wallet.EthereumAddress,
-			"turnkeyUuid": wallet.TurnkeyUUID,
-			"balance":     formatBalance(balance),
-			"dropsLeft":   wallet.DropsLeft(),
+			"address":               wallet.EthereumAddress,
+			"turnkeyUuid":           wallet.TurnkeyUUID,
+			"balance":               formatBalance(balance),
+			"dropsLeft":             wallet.DropsLeft(),
+			"turnkeyOrganizationId": user.SubOrganizationId.String,
 		})
 	})
 
@@ -401,6 +383,25 @@ func main() {
 		ctx.JSON(http.StatusOK, history)
 	})
 
+	router.POST("/api/wallet/export", func(ctx *gin.Context) {
+		var req types.ExportRequest
+		err = ctx.BindJSON(&req)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		bodyBytes, err := turnkey.Client.ForwardSignedActivity(req.SignedExportRequest.Url, req.SignedExportRequest.Body, req.SignedExportRequest.Stamp)
+		if err != nil {
+			err = errors.Wrap(err, "error while forwarding signed EXPORT_WALLET activity")
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+		exportBundle := gjson.Get(string(bodyBytes), "activity.result.exportWalletResult.exportBundle").String()
+
+		ctx.JSON(http.StatusOK, exportBundle)
+	})
+
 	router.POST("/api/init-recovery", func(ctx *gin.Context) {
 		var params types.RecoveryParams
 		err := ctx.BindJSON(&params)
@@ -436,7 +437,7 @@ func main() {
 			return
 		}
 
-		err = turnkey.Client.ForwardSignedActivity(req.SignedRecoverRequest.Url, req.SignedRecoverRequest.Body, req.SignedRecoverRequest.Stamp)
+		_, err = turnkey.Client.ForwardSignedActivity(req.SignedRecoverRequest.Url, req.SignedRecoverRequest.Body, req.SignedRecoverRequest.Stamp)
 		if err != nil {
 			if strings.Contains(err.Error(), "no valid user found for authenticator") && strings.Contains(err.Error(), "Got status 401") {
 				// This is a tad weird, but while forwarding `RECOVER_USER`` activities, the "success" indicator isn't the usual "ACTIVITY_STATUS_COMPLETE",
