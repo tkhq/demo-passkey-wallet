@@ -254,14 +254,11 @@ export default function Dashboard() {
 
         <History></History>
 
-        <div className="text-zinc-500 text-center font-semibold mt-12">
-          <Link className="underline hover:font-bold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
+        <div className="text-zinc-500 text-center mt-12">
+          <Link className="underline hover:font-bold font-semibold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
             Documentation
           </Link>
-          {' '}|{' '}
-          <Link className="underline hover:font-bold" target="_blank" href={getSubOrganizationUrl()} title="Did you know? You are the owner of a completely independent Turnkey Sub-Organization!">
-            Sub-Org Details
-          </Link>
+          {key && <p className="text-sm">Did you know? You now have your own Turnkey Organization! Its unique ID is {key.data["turnkeyOrganizationId"]}.</p>}
         </div>
 
         <Footer></Footer>

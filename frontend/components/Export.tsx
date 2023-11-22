@@ -45,7 +45,7 @@ export function Export(props: ExportProps) {
   const iframeCss = `
   iframe {
       width: 100%;
-      height: 250px;
+      height: 340px;
   }
   `;
 

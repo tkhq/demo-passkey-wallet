@@ -15,7 +15,7 @@ type ExportWalletProps = {
 }
 
 export function ExportWallet(props: ExportWalletProps) {
-  const [iframeDisplay, setIframeDisplay] = useState("none")
+  const [iframeDisplay, setIframeDisplay] = useState("none");
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(null);
   const [agreements, setAgreements] = useState({
     agreement1: false,
@@ -36,6 +36,10 @@ export function ExportWallet(props: ExportWalletProps) {
     const allChecked = Object.values(agreements).every(Boolean);
     setDisabledReveal(!allChecked);
   }, [agreements]);
+
+  useEffect(() => {
+    setIframeDisplay("none");
+  }, []);
 
   async function exportWallet() {
     if (iframeStamper === null) {
@@ -83,7 +87,14 @@ export function ExportWallet(props: ExportWalletProps) {
         {!iframeStamper && (
           <p className="space-y-4 max-w-lg mx-auto text-center">loading...</p>
         )}
-        {iframeStamper && (
+        {iframeStamper && iframeDisplay == "block" ? (
+          <div className="text-center px-6 py-4">
+            <h2 className="text-lg md:text-2xl font-semibold">Wallet seed phrase</h2>
+            <p className="px-4">
+              Store this in a secure place and do not share it with anyone, including Turnkey.
+            </p>
+          </div>
+        ) : (
           <div className="text-center px-6 py-4">
             <h2 className="text-lg md:text-2xl font-semibold">Before you continue</h2>
             <p className="px-4 py-2">
