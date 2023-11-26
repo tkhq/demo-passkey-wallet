@@ -69,56 +69,54 @@ export default function Dashboard() {
 
   async function sendFormHandler (data: sendFormData) {
     setDisabledSend(true)
+    try {
+      const constructRes = await axios.post(constructTxUrl(), {
+        amount: data.amount,
+        destination: data.destination,
+      }, { withCredentials: true });
 
-    const constructRes = await axios.post(constructTxUrl(), {
-      amount: data.amount,
-      destination: data.destination,
-    }, { withCredentials: true });
-
-    if (constructRes.status === 200) {
-      console.log("Successfully constructed tx: ", constructRes.data["unsignedTransaction"]);
-    } else {
-      const msg = `Unexpected response: ${constructRes.status}: ${constructRes.data}`;
-      console.error(msg)
-      alert(msg)
-      setDisabledSend(false)
-      return
-    }
-
-    const stamper = new WebauthnStamper({
-      rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!
-    });
-    const client = new TurnkeyClient({
-      baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-    }, stamper);
-
-    // Now let's sign this!
-    const signedTransaction = await client.stampSignTransaction({
-      type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
-      organizationId: constructRes.data["organizationId"],
-      timestampMs: Date.now().toString(),
-      parameters: {
-        signWith: constructRes.data["address"],
-        unsignedTransaction: constructRes.data["unsignedTransaction"],
-        type: "TRANSACTION_TYPE_ETHEREUM"
+      if (constructRes.status === 200) {
+        console.log("Successfully constructed tx: ", constructRes.data["unsignedTransaction"]);
+      } else {
+        throw new Error(`Unexpected response from tx construction endpoint: ${constructRes.status}: ${constructRes.data}`);
       }
-    });
 
-    const sendRes = await axios.post(sendTxUrl(), {
-      signedSendTx: signedTransaction,
-      destination: data.destination,
-    }, { withCredentials: true });
+      const stamper = new WebauthnStamper({
+        rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!
+      });
+      const client = new TurnkeyClient({
+        baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+      }, stamper);
 
-    if (sendRes.status === 200) {
-      console.log("Successfully sent! Hash", sendRes.data["hash"]);
-      setTxHash(sendRes.data["hash"])
-    } else {
-      const msg = `Unexpected response: ${sendRes.status}: ${sendRes.data}`;
+      // Now let's sign this!
+      const signedTransaction = await client.stampSignTransaction({
+        type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
+        organizationId: constructRes.data["organizationId"],
+        timestampMs: Date.now().toString(),
+        parameters: {
+          signWith: constructRes.data["address"],
+          unsignedTransaction: constructRes.data["unsignedTransaction"],
+          type: "TRANSACTION_TYPE_ETHEREUM"
+        }
+      });
+
+      const sendRes = await axios.post(sendTxUrl(), {
+        signedSendTx: signedTransaction,
+        destination: data.destination,
+      }, { withCredentials: true });
+  
+      if (sendRes.status === 200) {
+        console.log("Successfully sent! Hash", sendRes.data["hash"]);
+        setTxHash(sendRes.data["hash"])
+      } else {
+        throw new Error(`Unexpected response when submitting signed transaction: ${sendRes.status}: ${sendRes.data}`);
+      }
+    } catch (e: any) {
+      const msg = `Caught error: ${e.toString()}`;
       console.error(msg)
       alert(msg)
-      setDisabledSend(false)
-      return
     }
+
     setDisabledSend(false)
   };
 

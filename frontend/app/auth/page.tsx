@@ -65,13 +65,23 @@ export default function Auth() {
  */
 async function registerOrAuthenticate (data: authenticationFormData) {
   setDisabledSubmit(true)
-  const subOrganizationId = await subOrganizationIdForEmail(data.email);
 
-  if (subOrganizationId !== null) {
-    authenticate(subOrganizationId);
-  } else {
-    signup(data.email)
+  try {
+    const subOrganizationId = await subOrganizationIdForEmail(data.email);
+
+    if (subOrganizationId !== null) {
+      await authenticate(subOrganizationId);
+    } else {
+      await signup(data.email)
+    }
+  } catch (e: any) {
+    const message = `Caught an error: ${e.toString()}`;
+    // TODO: convert to proper UI toast / modal
+    alert(message);
+    console.error(message);
   }
+
+  setDisabledSubmit(false);
 };
 
 async function subOrganizationIdForEmail(email: string): Promise<string|null> {
@@ -83,9 +93,7 @@ async function subOrganizationIdForEmail(email: string): Promise<string|null> {
   } else if (res.status === 204) {
     return null
   } else {
-    // TODO: convert to toast?
-    alert("error while fetching subOrg ID for email!")
-    return null
+    throw new Error(`Unexpected response from registration status endpoint: ${res.status}: ${res.data}`);
   }
 }
 
@@ -101,9 +109,14 @@ async function authenticate(subOrganizationId: string) {
     baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
   }, stamper)
 
-  const signedRequest = await client.stampGetWhoami({
-    organizationId: subOrganizationId
-  })
+  var signedRequest;
+  try {
+    signedRequest = await client.stampGetWhoami({
+      organizationId: subOrganizationId
+    })
+  } catch (e) {
+    throw new Error(`Error during webauthn prompt: ${e}`);
+  }
 
   const res = await axios.post(authenticateUrl(), {
     signedWhoamiRequest: signedRequest,
@@ -115,10 +128,7 @@ async function authenticate(subOrganizationId: string) {
     router.push("/dashboard")
     return
   } else {
-    const msg = `Unexpected response: ${res.status}: ${res.data}`;
-    console.error(msg)
-    alert(msg)
-    return
+    throw new Error(`Unexpected response from authentication endpoint: ${res.status}: ${res.data}`);
   }
 }
 
@@ -164,17 +174,14 @@ async function signup(email: string) {
     attestation,
     challenge: base64UrlEncode(challenge),
   }, { withCredentials: true });
-  
+
   if (res.status === 200) {
     console.log("Successfully registered! Redirecting you to dashboard");
     mutate(whoamiUrl())
     router.push("/dashboard")
     return
   } else {
-    const msg = `Unexpected response: ${res.status}: ${res.data}`;
-    console.error(msg)
-    alert(msg)
-    return
+    throw new Error(`Unexpected response from registration endpoint: ${res.status}: ${res.data}`);
   }
 }
 
