@@ -82,15 +82,14 @@ export function ExportWallet(props: ExportWalletProps) {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full min-h-export-modal">
       <div>
-        {!iframeStamper && (
+        {!iframeStamper ? (
           <p className="space-y-4 max-w-lg mx-auto text-center">loading...</p>
-        )}
-        {iframeStamper && iframeDisplay == "block" ? (
-          <div className="text-center px-6 py-4">
+        ) : iframeStamper && iframeDisplay == "block" ? (
+          <div className="text-center px-6 pt-4">
             <h2 className="text-lg md:text-2xl font-semibold">Wallet seed phrase</h2>
-            <p className="px-4">
+            <p className="px-4 pt-2">
               Store this in a secure place and do not share it with anyone, including Turnkey.
             </p>
           </div>
@@ -101,7 +100,7 @@ export function ExportWallet(props: ExportWalletProps) {
               By revealing this wallet seedphrase for <span className="font-mono text-gray-800">{props.walletAddress}</span> you understand that:
             </p>
             <ul className="space-y-2 mt-4">
-              <li key="agreement1" className="flex items-start my-4">
+              <li key="agreement1" className="flex items-start py-4">
               <input
                 type="checkbox"
                 id="agreement1"
@@ -111,7 +110,7 @@ export function ExportWallet(props: ExportWalletProps) {
               />
               <label htmlFor="agreement1" className="text-justify px-4">You should never share your private key with anyone, including the Turnkey team. Turnkey will never ask you for your private key.</label>
               </li>              
-              <li key="agreement2" className="flex items-start my-4">
+              <li key="agreement2" className="flex items-start py-4">
               <input
                 type="checkbox"
                 id="agreement2"
@@ -121,7 +120,7 @@ export function ExportWallet(props: ExportWalletProps) {
               />
               <label htmlFor="agreement2" className="text-justify px-4">You are responsible for the security of this private key and any assets associated with it.</label>
               </li>
-              <li key="agreement3" className="flex items-start my-4">
+              <li key="agreement3" className="flex items-start py-4">
               <input
                 type="checkbox"
                 id="agreement3"
