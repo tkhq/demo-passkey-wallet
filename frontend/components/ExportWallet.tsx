@@ -140,7 +140,7 @@ export function ExportWallet(props: ExportWalletProps) {
                 onChange={handleAgreementChange}
                 className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
-              <label htmlFor="agreement3" className="text-justify px-4">You have read and agree to <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href="https://www.turnkey.com/files/terms-of-service.pdf">Turnkey's Terms of Service</Link>, including the risks related to exporting your private key disclosed therein.</label>
+              <label htmlFor="agreement3" className="text-justify px-4">You have read and agree to <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href="https://www.turnkey.com/files/terms-of-service.pdf">Turnkey{"\'"}s Terms of Service</Link>, including the risks related to exporting your private key disclosed therein.</label>
               </li>
             </ul>
             <div className="flex justify-center items-center mt-6">
