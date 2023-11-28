@@ -143,7 +143,7 @@ export default function Dashboard() {
               <Image
               className={`inline-block invert`}
               src="/turnkey_logo_black.svg"
-              alt="Turnkey"
+              alt="Turnkey Logo"
               width={110}
               height={30}
               priority
@@ -186,12 +186,12 @@ export default function Dashboard() {
                     priority
                   />
                   </Link> : null }
-                {key ? <div>
+                { key && state.subOrganizationId ? <div>
                     <button className="text-indigo-600 cursor-pointer underline" onClick={openModal}>
                       Export Wallet <Image
                       className={`inline-block`}
                       src="/export.svg"
-                      alt="->"
+                      alt="Export"
                       width={20}
                       height={20}
                       priority
@@ -201,7 +201,7 @@ export default function Dashboard() {
                       <ExportWallet
                         walletId={key.data["turnkeyUuid"]}
                         walletAddress={key.data["address"]}
-                        organizationId={key.data["turnkeyOrganizationId"]}
+                        organizationId={state.subOrganizationId!}
                       />
                     </Modal>
                 </div> : null }
@@ -258,7 +258,10 @@ export default function Dashboard() {
           <Link className="underline hover:font-bold font-semibold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
             Documentation
           </Link>
-          {key && <p className="text-sm">Did you know? You now have your own Turnkey Organization! Its unique ID is {key.data["turnkeyOrganizationId"]}.</p>}
+          { state.subOrganizationId ? 
+            <p className="text-sm">Did you know? You now have your own Turnkey Organization! Its unique ID is {state.subOrganizationId}.</p>
+            : null
+          }
         </div>
 
         <Footer></Footer>

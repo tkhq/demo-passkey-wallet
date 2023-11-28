@@ -226,11 +226,10 @@ func main() {
 		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"address":               wallet.EthereumAddress,
-			"turnkeyUuid":           wallet.TurnkeyUUID,
-			"balance":               formatBalance(balance),
-			"dropsLeft":             wallet.DropsLeft(),
-			"turnkeyOrganizationId": user.SubOrganizationId.String,
+			"address":     wallet.EthereumAddress,
+			"turnkeyUuid": wallet.TurnkeyUUID,
+			"balance":     formatBalance(balance),
+			"dropsLeft":   wallet.DropsLeft(),
 		})
 	})
 

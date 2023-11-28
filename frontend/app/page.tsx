@@ -9,7 +9,7 @@ export default async function Home() {
         <Image
           className={`inline-block invert my-12 mx-8`}
           src="/turnkey_logo_black.svg"
-          alt="->"
+          alt="Turnkey Logo"
           width={110}
           height={30}
           priority
@@ -26,7 +26,7 @@ export default async function Home() {
                 <Image
                 className={`inline-block lg:invert`}
                 src="/turnkey_logo_black.svg"
-                alt="Turnkey"
+                alt="Turnkey Logo"
                 width={110}
                 height={30}
                 priority
