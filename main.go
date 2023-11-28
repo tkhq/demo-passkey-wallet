@@ -117,7 +117,15 @@ func main() {
 	router.GET("/api/whoami", func(ctx *gin.Context) {
 		user := getCurrentUser(ctx)
 		if user != nil {
-			ctx.JSON(http.StatusOK, user)
+			var subOrganizationId *string
+			if user.SubOrganizationId.Valid {
+				subOrganizationId = &user.SubOrganizationId.String
+			}
+			ctx.JSON(http.StatusOK, map[string]interface{}{
+				"userId":            user.ID,
+				"email":             user.Email,
+				"subOrganizationId": subOrganizationId,
+			})
 		} else {
 			// Empty response when there is no current user
 			ctx.JSON(http.StatusNoContent, nil)
