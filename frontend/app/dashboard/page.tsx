@@ -15,6 +15,8 @@ import { useForm } from 'react-hook-form';
 import useSWR from 'swr';
 import { AuthWidget } from '@/components/AuthWidget';
 import { History } from '@/components/History';
+import { Modal } from '@/components/Modal';
+import { ExportWallet } from '@/components/ExportWallet';
 import { TurnkeyClient } from '@turnkey/http';
 
 type resource = {
@@ -45,6 +47,7 @@ export default function Dashboard() {
   const { state } = useAuth();
   const [disabledSend, setDisabledSend] = useState(false);
   const [txHash, setTxHash] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } = useForm<sendFormData>();
@@ -120,6 +123,14 @@ export default function Dashboard() {
     setDisabledSend(false)
   };
 
+  function openModal() {
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+  }
+
   if (keyError) {
     console.error("failed to load wallet information:", keyError)
   };
@@ -132,7 +143,7 @@ export default function Dashboard() {
               <Image
               className={`inline-block invert`}
               src="/turnkey_logo_black.svg"
-              alt="Turnkey"
+              alt="Turnkey Logo"
               width={110}
               height={30}
               priority
@@ -161,7 +172,7 @@ export default function Dashboard() {
             </div>
 
             <div className="col-auto col-span-5 lg:col-span-3 sm:col-span-5">
-              <p className="mb-4">
+              <div className="mb-4">
                 <span className="font-semibold mr-2">Address:</span>
                 <span className="font-mono">{key && key.data["address"]}</span>
                 <br/>
@@ -175,7 +186,26 @@ export default function Dashboard() {
                     priority
                   />
                   </Link> : null }
-              </p>
+                { key && state.subOrganizationId ? <div>
+                    <button className="text-indigo-600 cursor-pointer underline" onClick={openModal}>
+                      Export Wallet <Image
+                      className={`inline-block`}
+                      src="/export.svg"
+                      alt="Export"
+                      width={20}
+                      height={20}
+                      priority
+                    />
+                    </button>
+                    <Modal show={isModalOpen} onClose={closeModal} >
+                      <ExportWallet
+                        walletId={key.data["turnkeyUuid"]}
+                        walletAddress={key.data["address"]}
+                        organizationId={state.subOrganizationId!}
+                      />
+                    </Modal>
+                </div> : null }
+              </div>
               <p>
                 <span className="font-semibold mr-2">Balance:</span>
                 <span className="font-mono">{key ? key.data["balance"] : "_ . __"} Sepolia ETH</span>
@@ -224,14 +254,14 @@ export default function Dashboard() {
 
         <History></History>
 
-        <div className="text-zinc-500 text-center font-semibold mt-12">
-          <Link className="underline hover:font-bold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
+        <div className="text-zinc-500 text-center mt-12">
+          <Link className="underline hover:font-bold font-semibold" target="_blank" href={"https://docs.turnkey.com/getting-started/sub-organizations"} title="Ready to build?">
             Documentation
           </Link>
-          {' '}|{' '}
-          <Link className="underline hover:font-bold" target="_blank" href={getSubOrganizationUrl()} title="Did you know? You are the owner of a completely independent Turnkey Sub-Organization!">
-            Sub-Org Details
-          </Link>
+          { state.subOrganizationId ? 
+            <p className="text-sm">Did you know? You now have your own Turnkey Organization! Its unique ID is {state.subOrganizationId}.</p>
+            : null
+          }
         </div>
 
         <Footer></Footer>

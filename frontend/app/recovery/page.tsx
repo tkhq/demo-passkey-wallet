@@ -167,7 +167,7 @@ export default function RecoveryPage() {
       signedRecoverRequest: signedRequest,
     });
 
-    if (res.status == 200) {
+    if (res.status === 200) {
       alert(
         "SUCCESS! Authenticator added. Recovery flow complete. Try logging back in!"
       );
@@ -186,7 +186,7 @@ export default function RecoveryPage() {
         <Image
           className={`inline-block invert my-12 mx-8`}
           src="/turnkey_logo_black.svg"
-          alt="->"
+          alt="Turnkey Logo"
           width={110}
           height={30}
           priority

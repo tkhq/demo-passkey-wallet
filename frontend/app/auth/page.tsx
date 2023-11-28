@@ -191,7 +191,7 @@ async function signup(email: string) {
         <Image
           className={`inline-block invert my-12 mx-8`}
           src="/turnkey_logo_black.svg"
-          alt="->"
+          alt="Turnkey Logo"
           width={110}
           height={30}
           priority

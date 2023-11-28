@@ -9,7 +9,8 @@ type AuthState = {
     isLoaded: boolean,
     isLoggedIn: boolean,
     email: string|null,
-    userId: string|null,
+    userId: number|null,
+    subOrganizationId: string|null,
 }
 
 const initialState: AuthState = {
@@ -17,6 +18,7 @@ const initialState: AuthState = {
     isLoggedIn: false,
     email: null,
     userId: null,
+    subOrganizationId: null,
 };
 
 async function authStateFetcher(url: string): Promise<AuthState> {
@@ -26,7 +28,8 @@ async function authStateFetcher(url: string): Promise<AuthState> {
           isLoaded: true,
           isLoggedIn: true,
           email: response.data["email"],
-          userId: response.data["id"],
+          userId: response.data["ID"],
+          subOrganizationId: response.data["subOrganizationId"].String,
       }
   } else if (response.status === 204) {
     // A 204 indicates "no current user"
@@ -34,7 +37,8 @@ async function authStateFetcher(url: string): Promise<AuthState> {
       isLoaded: true,
       isLoggedIn: false,
       email: response.data["email"],
-      userId: response.data["id"],
+      userId: response.data["userId"],
+      subOrganizationId: response.data["subOrganizationId"].String,
     }
   } else {
       // Other status codes indicate an error of some sort

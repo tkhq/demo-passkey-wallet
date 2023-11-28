@@ -18,6 +18,9 @@ module.exports = {
         'send-pill': '#EAF2EB',
         'receive-pill': '#FFFAED'
       },
+      minHeight: {
+        'export-modal': 600,
+      }
     },
   },
   plugins: [

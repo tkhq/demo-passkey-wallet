@@ -33,6 +33,10 @@ export function getWalletHistoryUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/history"
 }
 
+export function exportWalletUrl(): string {
+    return BACKEND_API_BASE_URL + "/api/wallet/export"
+}
+
 export function dropUrl(): string {
     return BACKEND_API_BASE_URL + "/api/wallet/drop"
 }

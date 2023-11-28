@@ -28,19 +28,28 @@ export function AuthWidget() {
 
     if (state.isLoaded) {
         if (state.isLoggedIn === true) {
-            return <div className="text-right pt-1">
-                {
-                    pathName !== "/dashboard" ?
-                    <a href="/dashboard" className="inline-block rounded-md bg-zinc-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                        Dashboard
-                    </a>
-                    : ''
-                }
-                <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-6 py-3 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                    Sign out
-                </button>
-                <p className="mt-2 text-xs leading-5 text-white">Signed in as {state.email}</p>
-            </div>;
+            if (pathName !== "/dashboard") {
+                return (
+                    <div className="text-right pt-1">
+                        <a href="/dashboard" className="inline-block rounded-md bg-zinc-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                            Dashboard
+                        </a>
+                        <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-6 py-3 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                            Sign out
+                        </button>
+                        <p className="mt-2 text-xs leading-5 text-zinc">Signed in as {state.email}</p>
+                    </div>
+                );
+            } else {
+                return (
+                    <div className="text-right pt-1">
+                        <button onClick={handleLogout} className="inline-block ml-2 rounded-md bg-white px-6 py-3 text-center text-sm font-semibold text-destructive-red shadow-sm hover:bg-destructive-red hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                            Sign out
+                        </button>
+                        <p className="mt-2 text-xs leading-5 text-white">Signed in as {state.email}</p>
+                    </div>
+                );
+            }
         } else {
             return <div className="mt-2 text-right">
                 <a href="/auth" className="inline-block rounded-md bg-zinc-900 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm hover:transparency:75 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Sign In</a>

@@ -16,7 +16,9 @@ import (
 	"github.com/tkhq/go-sdk/pkg/api/client/activities"
 	"github.com/tkhq/go-sdk/pkg/api/client/organizations"
 	"github.com/tkhq/go-sdk/pkg/api/client/private_keys"
-	"github.com/tkhq/go-sdk/pkg/api/client/who_am_i"
+	"github.com/tkhq/go-sdk/pkg/api/client/sessions"
+	"github.com/tkhq/go-sdk/pkg/api/client/signers"
+	"github.com/tkhq/go-sdk/pkg/api/client/user_recovery"
 
 	"github.com/tkhq/go-sdk/pkg/api/models"
 	"github.com/tkhq/go-sdk/pkg/apikey"
@@ -29,8 +31,8 @@ type TurnkeyApiClient struct {
 	// APIKey is the structure
 	APIKey *apikey.Key
 
-	// Client is a raw TurnkeyPublicAPI client
-	Client *client.TurnkeyPublicAPI
+	// Client is a raw TurnkeyAPI client
+	Client *client.TurnkeyAPI
 
 	// Organization is the default organization to be used for tests.
 	OrganizationID string
@@ -68,10 +70,10 @@ func Init(turnkeyApiHost, turnkeyApiPrivateKey, organizationID string) error {
 }
 
 func (c *TurnkeyApiClient) Whoami() (string, error) {
-	p := who_am_i.NewPublicAPIServiceGetWhoamiParams().WithBody(&models.V1GetWhoamiRequest{
+	p := sessions.NewGetWhoamiParams().WithBody(&models.GetWhoamiRequest{
 		OrganizationID: &c.OrganizationID,
 	})
-	resp, err := c.Client.WhoAmi.PublicAPIServiceGetWhoami(p, c.GetAuthenticator())
+	resp, err := c.Client.Sessions.GetWhoami(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -108,40 +110,43 @@ func (c *TurnkeyApiClient) ForwardSignedRequest(url string, requestBody string, 
 // TODO: should be part of the Go SDK!
 // This function does something similar to `ForwardSignedRequest`, except it also polls until the activity is COMPLETE or FAILED
 // If that's not the case after 3 attempts, give up.
-func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string, stamp types.TurnkeyStamp) error {
+func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string, stamp types.TurnkeyStamp) ([]byte, error) {
 	activityStatus := "UNKNOWN"
 
-	for attempts := 0; attempts <= 3; attempts++ {
+	delay := 200
+	maxAttempts := 3
+
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
 		status, bodyBytes, err := c.ForwardSignedRequest(url, requestBody, stamp)
 		if err != nil {
-			return errors.Wrap(err, "error while forwarding signed request")
+			return nil, errors.Wrap(err, "error while forwarding signed request")
 		}
 
 		if status != 200 {
-			return fmt.Errorf("expected 200 when forwarding signed activity. Got status %d: %s", status, bodyBytes)
+			return nil, fmt.Errorf("expected 200 when forwarding signed activity. Got status %d: %s", status, bodyBytes)
 		}
 
 		activityStatus = gjson.Get(string(bodyBytes), "activity.status").String()
 		switch activityStatus {
-		case string(models.V1ActivityStatusACTIVITYSTATUSCREATED):
+		case string(models.ActivityStatusCreated):
 			continue
-		case string(models.V1ActivityStatusACTIVITYSTATUSPENDING):
+		case string(models.ActivityStatusPending):
 			continue
-		case string(models.V1ActivityStatusACTIVITYSTATUSCOMPLETED):
-			return nil
-		case string(models.V1ActivityStatusACTIVITYSTATUSCONSENSUSNEEDED):
-			return errors.New("Forwarded activity requires consensus")
-		case string(models.V1ActivityStatusACTIVITYSTATUSREJECTED):
-			return errors.New("Forwarded activity was rejected")
-		case string(models.V1ActivityStatusACTIVITYSTATUSFAILED):
-			return errors.New("Forwarded activity failed")
+		case string(models.ActivityStatusCompleted):
+			return bodyBytes, nil
+		case string(models.ActivityStatusConsensusNeeded):
+			return nil, fmt.Errorf("forwarded activity requires consensus after %d attempts", attempts+1)
+		case string(models.ActivityStatusRejected):
+			return nil, fmt.Errorf("forwarded activity was rejected after %d attempts", attempts+1)
+		case string(models.ActivityStatusFailed):
+			return nil, fmt.Errorf("forwarded activity failed after %d attempts", attempts+1)
 		}
 
 		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
-		time.Sleep(200 * time.Duration(attempts) * time.Millisecond)
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
-	return fmt.Errorf("unable to forward request, activity is in %s status", activityStatus)
+	return nil, fmt.Errorf("unable to forward request, activity is in %s status", activityStatus)
 }
 
 // This function creates a new sub-organization for a given user email.
@@ -167,38 +172,38 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 	ethereumWalletName := fmt.Sprintf("Ethereum Wallet - %s", *timestamp)
 	ethereumDerivationPath := "m/44'/60'/0'/0/0"
 
-	p := organizations.NewPublicAPIServiceCreateSubOrganizationParams().WithBody(&models.V1CreateSubOrganizationRequest{
+	p := organizations.NewCreateSubOrganizationParams().WithBody(&models.CreateSubOrganizationRequest{
 		OrganizationID: &c.OrganizationID,
-		Parameters: &models.V1CreateSubOrganizationIntentV4{
+		Parameters: &models.CreateSubOrganizationIntentV4{
 			SubOrganizationName: &subOrganizationName,
 			RootQuorumThreshold: &rootQuorumThreshold,
-			Wallet: &models.V1WalletParams{
-				Accounts: []*models.V1WalletAccountParams{
+			Wallet: &models.WalletParams{
+				Accounts: []*models.WalletAccountParams{
 					{
-						AddressFormat: models.Immutablecommonv1AddressFormatADDRESSFORMATETHEREUM.Pointer(),
-						Curve:         models.Immutablecommonv1CurveCURVESECP256K1.Pointer(),
+						AddressFormat: models.AddressFormatEthereum.Pointer(),
+						Curve:         models.CurveSecp256k1.Pointer(),
 						Path:          &ethereumDerivationPath,
-						PathFormat:    models.V1PathFormatPATHFORMATBIP32.Pointer(),
+						PathFormat:    models.PathFormatBip32.Pointer(),
 					},
 				},
 				WalletName: &ethereumWalletName,
 			},
-			RootUsers: []*models.V1RootUserParams{
+			RootUsers: []*models.RootUserParams{
 				{
 					// TODO: why is this a pointer instead of a string? This is a required string.
 					UserName: func() *string { s := "Wallet User"; return &s }(),
 					// TODO: and why is that a straight up string?! This _should_ be optional / a pointer
 					UserEmail: userEmail,
-					APIKeys:   []*models.V1APIKeyParams{},
-					Authenticators: []*models.V1AuthenticatorParamsV2{
+					APIKeys:   []*models.APIKeyParams{},
+					Authenticators: []*models.AuthenticatorParamsV2{
 						{
 							Challenge: &challenge,
-							Attestation: &models.V1Attestation{
+							Attestation: &models.Attestation{
 								AttestationObject: &attestationObject,
 								ClientDataJSON:    &clientDataJson,
 								CredentialID:      &credentialId,
-								Transports: []models.Immutablewebauthnv1AuthenticatorTransport{
-									models.Immutablewebauthnv1AuthenticatorTransportAUTHENTICATORTRANSPORTHYBRID,
+								Transports: []models.AuthenticatorTransport{
+									models.AuthenticatorTransportHybrid,
 								},
 							},
 							AuthenticatorName: func() *string { s := "End-User Passkey"; return &s }(),
@@ -209,10 +214,10 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 		},
 		TimestampMs: timestamp,
 		// TODO: this should be automatically filled based on Param type.
-		Type: (*string)(models.V1ActivityTypeACTIVITYTYPECREATESUBORGANIZATIONV4.Pointer()),
+		Type: (*string)(models.ActivityTypeCreateSubOrganizationV4.Pointer()),
 	})
 
-	response, err := c.Client.Organizations.PublicAPIServiceCreateSubOrganization(p, c.GetAuthenticator())
+	response, err := c.Client.Organizations.CreateSubOrganization(p, c.GetAuthenticator())
 	if err != nil {
 		return nil, errors.Wrap(err, "error while creating CREATE_SUB_ORGANIZATION activity")
 	}
@@ -244,40 +249,23 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 	}, nil
 }
 
-func (c *TurnkeyApiClient) GetSubOrganization(subOrganizationId string) ([]byte, error) {
-	p := organizations.NewPublicAPIServiceGetOrganizationParams().WithBody(&models.V1GetOrganizationRequest{
-		OrganizationID: &subOrganizationId,
-	})
-
-	response, err := c.Client.Organizations.PublicAPIServiceGetOrganization(p, c.GetAuthenticator())
-	if err != nil {
-		return []byte{}, err
-	}
-
-	data, err := response.Payload.OrganizationData.MarshalBinary()
-	if err != nil {
-		return []byte{}, errors.Wrap(err, "cannot marshal sub-org data")
-	}
-	return data, nil
-}
-
 // Takes an unsigned ETH payload and tries to sign it.
 // On success, the signed transaction is returned. On failure, an error is returned.
 func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith string, unsignedTransaction string) (string, error) {
 	timestamp := util.RequestTimestamp()
 
-	p := private_keys.NewPublicAPIServiceSignTransactionParams().WithBody(&models.V1SignTransactionRequest{
+	p := signers.NewSignTransactionParams().WithBody(&models.SignTransactionRequest{
 		OrganizationID: &organizationId,
-		Parameters: &models.V1SignTransactionIntentV2{
+		Parameters: &models.SignTransactionIntentV2{
 			SignWith:            &signWith,
-			Type:                models.V1TransactionTypeTRANSACTIONTYPEETHEREUM.Pointer(),
+			Type:                models.TransactionTypeEthereum.Pointer(),
 			UnsignedTransaction: &unsignedTransaction,
 		},
 		TimestampMs: timestamp,
-		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPESIGNTRANSACTIONV2.Pointer()),
+		Type:        (*string)(models.ActivityTypeSignTransactionV2.Pointer()),
 	})
 
-	activityResponse, err := c.Client.PrivateKeys.PublicAPIServiceSignTransaction(p, c.GetAuthenticator())
+	activityResponse, err := c.Client.Signers.SignTransaction(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -293,12 +281,12 @@ func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith strin
 // Gets the Ethereum address for a private key ID created on Turnkey
 // This is only used to pull one address: the warchest private key address
 func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId string) (string, error) {
-	p := private_keys.NewPublicAPIServiceGetPrivateKeyParams().WithBody(&models.V1GetPrivateKeyRequest{
+	p := private_keys.NewGetPrivateKeyParams().WithBody(&models.GetPrivateKeyRequest{
 		OrganizationID: &organizationId,
 		PrivateKeyID:   &privateKeyId,
 	})
 
-	resp, err := c.Client.PrivateKeys.PublicAPIServiceGetPrivateKey(p, c.GetAuthenticator())
+	resp, err := c.Client.PrivateKeys.GetPrivateKey(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -310,17 +298,17 @@ func (c *TurnkeyApiClient) GetEthereumAddress(organizationId, privateKeyId strin
 // The backend API key can do this because parent organizations are allowed to initiate recovery for their sub-orgs.
 // Any (API) user which has the ability to perform ACTIVITY_TYPE_INIT_USER_EMAIL_RECOVERY in the parent can thus target the sub-organizations as well.
 func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKey string) (string, error) {
-	p := organizations.NewPublicAPIServiceInitUserEmailRecoveryParams().WithBody(&models.V1InitUserEmailRecoveryRequest{
+	p := user_recovery.NewInitUserEmailRecoveryParams().WithBody(&models.InitUserEmailRecoveryRequest{
 		OrganizationID: &subOrganizationId,
-		Parameters: &models.V1InitUserEmailRecoveryIntent{
+		Parameters: &models.InitUserEmailRecoveryIntent{
 			Email:           &email,
 			TargetPublicKey: &targetPublicKey,
 		},
 		TimestampMs: util.RequestTimestamp(),
-		Type:        (*string)(models.V1ActivityTypeACTIVITYTYPEINITUSEREMAILRECOVERY.Pointer()),
+		Type:        (*string)(models.ActivityTypeInitUserEmailRecovery.Pointer()),
 	})
 
-	activityResponse, err := c.Client.Organizations.PublicAPIServiceInitUserEmailRecovery(p, c.GetAuthenticator())
+	activityResponse, err := c.Client.UserRecovery.InitUserEmailRecovery(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -334,26 +322,41 @@ func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKe
 }
 
 // Utility to wait for an activity result
-func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*models.V1Result, error) {
-	// Sleep a sec, to give this activity the best chance of success before we poll for a result.
-	time.Sleep(1 * time.Second)
+func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*models.Result, error) {
+	delay := 200
+	maxAttempts := 3
 
-	params := activities.NewPublicAPIServiceGetActivityParams().WithBody(&models.V1GetActivityRequest{
-		ActivityID:     func() *string { return &activityId }(),
-		OrganizationID: &organizationId,
-	})
-	resp, err := c.Client.Activities.PublicAPIServiceGetActivity(params, c.GetAuthenticator())
-	if err != nil {
-		return nil, err
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		params := activities.NewGetActivityParams().WithBody(&models.GetActivityRequest{
+			ActivityID:     func() *string { return &activityId }(),
+			OrganizationID: &organizationId,
+		})
+		resp, err := c.Client.Activities.GetActivity(params, c.GetAuthenticator())
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to get activity result after %d attempts: %v", attempts+1, err)
+		}
+
+		switch *resp.Payload.Activity.Status {
+		case models.ActivityStatusCreated:
+			continue
+		case models.ActivityStatusPending:
+			continue
+		case models.ActivityStatusCompleted:
+			return resp.Payload.Activity.Result, nil
+		case models.ActivityStatusConsensusNeeded:
+			return nil, errors.New("activity requires consensus")
+		case models.ActivityStatusRejected:
+			return nil, errors.New("activity was rejected")
+		case models.ActivityStatusFailed:
+			return nil, errors.New("activity failed")
+		}
+
+		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
-	// TODO: it's possible that this activity comes back pending the first time but succeeds
-	// afterwards. We should really have some kind of retry policy here
-	if *resp.Payload.Activity.Status != models.V1ActivityStatusACTIVITYSTATUSCOMPLETED {
-		return nil, fmt.Errorf("activity %+v has not completed! Status: %+v", activityId, resp.Payload.Activity.Status)
-	}
-
-	return resp.Payload.Activity.Result, nil
+	return nil, fmt.Errorf("activity %+v has not completed after %d attempts", activityId, maxAttempts)
 }
 
 func (c *TurnkeyApiClient) GetAuthenticator() *sdk.Authenticator {

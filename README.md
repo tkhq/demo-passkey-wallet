@@ -102,6 +102,7 @@ $ cd frontend
 # Create your own .env.local file
 $ cp .env.example .env.local
 
+$ npm install
 $ npm run dev
 ```
 
