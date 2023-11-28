@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { IframeStamper } from '@turnkey/iframe-stamper';
 import { WebauthnStamper } from '@turnkey/webauthn-stamper';
 import { Export } from "@/components/Export";
+import Link from 'next/link';
 
 type ExportWalletProps = {
   walletId: string;
@@ -21,6 +22,7 @@ export function ExportWallet(props: ExportWalletProps) {
     agreement1: false,
     agreement2: false,
     agreement3: false,
+    agreement4: false,
   });
   const [disabledReveal, setDisabledReveal] = useState(true);
 
@@ -87,8 +89,8 @@ export function ExportWallet(props: ExportWalletProps) {
         {!iframeStamper ? (
           <p className="space-y-4 max-w-lg mx-auto text-center">loading...</p>
         ) : iframeStamper && iframeDisplay == "block" ? (
-          <div className="text-center px-6 pt-4">
-            <h2 className="text-lg md:text-2xl font-semibold">Wallet seed phrase</h2>
+          <div className="text-center px-6 py-4">
+            <h2 className="text-lg md:text-2xl font-semibold">Wallet private key</h2>
             <p className="px-4 pt-2">
               Store this in a secure place and do not share it with anyone, including Turnkey.
             </p>
@@ -97,9 +99,9 @@ export function ExportWallet(props: ExportWalletProps) {
           <div className="text-center px-6 py-4">
             <h2 className="text-lg md:text-2xl font-semibold">Before you continue</h2>
             <p className="px-4 py-2">
-              By revealing this wallet seedphrase for <span className="font-mono text-gray-800">{props.walletAddress}</span> you understand that:
+              By revealing the private key for <span className="font-mono text-gray-800">{props.walletAddress}</span> you understand and agree that:
             </p>
-            <ul className="space-y-2 mt-4">
+            <ul className="space-y-2 mt-4 text-sm">
               <li key="agreement1" className="flex items-start py-4">
               <input
                 type="checkbox"
@@ -118,7 +120,7 @@ export function ExportWallet(props: ExportWalletProps) {
                 onChange={handleAgreementChange}
                 className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
-              <label htmlFor="agreement2" className="text-justify px-4">You are responsible for the security of this private key and any assets associated with it.</label>
+              <label htmlFor="agreement2" className="text-justify px-4">You are responsible for the security of this private key and any assets associated with it, and Turnkey cannot help recover it on your behalf. Failure to properly secure your private key may result in total loss of the associated assets.</label>
               </li>
               <li key="agreement3" className="flex items-start py-4">
               <input
@@ -128,7 +130,17 @@ export function ExportWallet(props: ExportWalletProps) {
                 onChange={handleAgreementChange}
                 className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
               />
-              <label htmlFor="agreement3" className="text-justify px-4">Turnkey is not responsible for any other wallet software you may use with this private key.</label>
+              <label htmlFor="agreement3" className="text-justify px-4">Turnkey is not responsible for any other wallet you may use with this private key, and Turnkey does not represent that any other software or hardware will be compatible with or protect your private key.</label>
+              </li>
+              <li key="agreement4" className="flex items-start py-4">
+              <input
+                type="checkbox"
+                id="agreement4"
+                checked={agreements["agreement4"]}
+                onChange={handleAgreementChange}
+                className="w-4 h-4 text-zinc-600 bg-gray-100 border-gray-300 rounded focus:ring-zinc-500 focus:ring-2"
+              />
+              <label htmlFor="agreement3" className="text-justify px-4">You have read and agree to <Link className="text-indigo-600 cursor-pointer underline" target="_blank" href="https://www.turnkey.com/files/terms-of-service.pdf">Turnkey's Terms of Service</Link>, including the risks related to exporting your private key disclosed therein.</label>
               </li>
             </ul>
             <div className="flex justify-center items-center mt-6">
@@ -136,13 +148,13 @@ export function ExportWallet(props: ExportWalletProps) {
                 disabled={disabledReveal}
                 className="block rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                 onClick={() => exportWallet()}>
-                Reveal seedphrase
+                Reveal private key
               </button>
             </div>
           </div>
         )}
       </div>
-
+      
       <Export
         setIframeStamper={setIframeStamper}
         iframeDisplay={iframeDisplay}

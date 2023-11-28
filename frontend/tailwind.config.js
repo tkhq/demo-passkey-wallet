@@ -19,7 +19,7 @@ module.exports = {
         'receive-pill': '#FFFAED'
       },
       minHeight: {
-        'export-modal': 500,
+        'export-modal': 600,
       }
     },
   },

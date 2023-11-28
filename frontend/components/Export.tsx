@@ -49,7 +49,7 @@ export function Export(props: ExportProps) {
   `;
 
   return (
-    <div className="space-y-4 p-4 max-w-lg mx-auto" style={{ display: props.iframeDisplay }} id={TurnkeyIframeContainerId}>
+    <div className="space-y-4 p-4 max-w-lg m-auto" style={{ display: props.iframeDisplay }} id={TurnkeyIframeContainerId}>
           <style>{iframeCss}</style>
     </div>
   )
