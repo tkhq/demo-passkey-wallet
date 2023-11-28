@@ -127,7 +127,6 @@ func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string,
 		}
 
 		activityStatus = gjson.Get(string(bodyBytes), "activity.status").String()
-		fmt.Println(string(bodyBytes))
 		switch activityStatus {
 		case string(models.ActivityStatusCreated):
 			continue
@@ -333,7 +332,6 @@ func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*mo
 			OrganizationID: &organizationId,
 		})
 		resp, err := c.Client.Activities.GetActivity(params, c.GetAuthenticator())
-		fmt.Println(*resp.Payload.Activity.Status)
 
 		if err != nil {
 			return nil, fmt.Errorf("failed to get activity result after %d attempts: %v", attempts+1, err)
