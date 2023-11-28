@@ -10,13 +10,13 @@ type ModalProps = {
 };
 
 export function Modal(props: ModalProps) {
-  const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      props.onClose();
-    }
-  };
-
   useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        props.onClose();
+      }
+    };
+
     if (props.show) {
       window.addEventListener('keydown', handleEscape);
     }
@@ -25,7 +25,7 @@ export function Modal(props: ModalProps) {
     return () => {
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [props.show]);
+  }, [props]);
 
   if (!props.show) {
     return null;
