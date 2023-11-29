@@ -114,9 +114,12 @@ func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string,
 	activityStatus := "UNKNOWN"
 
 	delay := 200
-	maxAttempts := 3
+	maxAttempts := 5
 
 	for attempts := 0; attempts <= maxAttempts; attempts++ {
+		// Sleep for an increasing duration on each attempt, starting with 200ms and increasing by 200ms each time.
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
+
 		status, bodyBytes, err := c.ForwardSignedRequest(url, requestBody, stamp)
 		if err != nil {
 			return nil, errors.Wrap(err, "error while forwarding signed request")
@@ -141,9 +144,6 @@ func (c *TurnkeyApiClient) ForwardSignedActivity(url string, requestBody string,
 		case string(models.ActivityStatusFailed):
 			return nil, fmt.Errorf("forwarded activity failed after %d attempts", attempts+1)
 		}
-
-		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
-		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("unable to forward request, activity is in %s status", activityStatus)
@@ -324,9 +324,12 @@ func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKe
 // Utility to wait for an activity result
 func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*models.Result, error) {
 	delay := 200
-	maxAttempts := 3
+	maxAttempts := 5
 
-	for attempts := 0; attempts < maxAttempts; attempts++ {
+	for attempts := 0; attempts <= maxAttempts; attempts++ {
+		// Sleep for an increasing duration on each attempt, starting with 200ms and increasing by 200ms each time.
+		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
+
 		params := activities.NewGetActivityParams().WithBody(&models.GetActivityRequest{
 			ActivityID:     func() *string { return &activityId }(),
 			OrganizationID: &organizationId,
@@ -351,9 +354,6 @@ func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*mo
 		case models.ActivityStatusFailed:
 			return nil, errors.New("activity failed")
 		}
-
-		// Sleep 200ms the first try, 400ms the second, 600ms the third. Then bail.
-		time.Sleep(time.Duration(delay*(attempts+1)) * time.Millisecond)
 	}
 
 	return nil, fmt.Errorf("activity %+v has not completed after %d attempts", activityId, maxAttempts)
