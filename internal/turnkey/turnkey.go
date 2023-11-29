@@ -348,11 +348,11 @@ func (c *TurnkeyApiClient) WaitForResult(organizationId, activityId string) (*mo
 		case models.ActivityStatusCompleted:
 			return resp.Payload.Activity.Result, nil
 		case models.ActivityStatusConsensusNeeded:
-			return nil, errors.New("activity requires consensus")
+			return nil, fmt.Errorf("activity requires consensus after %d attempts", attempts+1)
 		case models.ActivityStatusRejected:
-			return nil, errors.New("activity was rejected")
+			return nil, fmt.Errorf("activity was rejected after %d attempts", attempts+1)
 		case models.ActivityStatusFailed:
-			return nil, errors.New("activity failed")
+			return nil, fmt.Errorf("activity failed after %d attempts", attempts+1)
 		}
 	}
 
