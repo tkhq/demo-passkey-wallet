@@ -119,6 +119,12 @@ $ heroku git:remote -a tkhq-demo-passkey-wallet
 $ git push heroku main
 ```
 
+If you need to push a specific branch to heroku, use the following:
+
+```sh
+$ git push heroku <your-branch>:main
+```
+
 ### Deploying the frontend to Vercel
 
 This should happen automatically by pushing to `main`. Ask Arnaud if you need help.
@@ -130,7 +136,7 @@ This should happen automatically by pushing to `main`. Ask Arnaud if you need he
 Locally you can use a `.env` file to change configuration. If you want to set/change/remove configuration env vars on Heroku, use the Heroku CLI:
 ```sh
 $ heroku login
-$ heroku config:set TURNKEY_API_HOST=coordinator-beta.turnkey.io
+$ heroku config:set TURNKEY_API_HOST=api.turnkey.com
 $ heroku config:set TURNKEY_ORGANIZATION_ID=<organization-id>
 $ heroku config:set TURNKEY_API_PRIVATE_KEY=<private-key>
 # more commands at <https://devcenter.heroku.com/articles/config-vars>
