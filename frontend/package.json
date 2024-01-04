@@ -6,7 +6,9 @@
     "dev": "next dev -p 3456",
     "build": "next build",
     "start": "next start -p 3456",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prettier-all:check": "prettier --check \"**/*.{css,html,js,json,md,ts,tsx,yaml,yml}\" --ignore-path ./.prettierignore",
+    "prettier-all:write": "prettier --write \"**/*.{css,html,js,json,md,ts,tsx,yaml,yml}\" --ignore-path ./.prettierignore"
   },
   "dependencies": {
     "@turnkey/http": "^2.4.2",
@@ -31,6 +33,7 @@
     "typescript": "5.1.6"
   },
   "devDependencies": {
-    "@tailwindcss/forms": "^0.5.3"
+    "@tailwindcss/forms": "^0.5.3",
+    "prettier": "^2.8.4"
   }
 }

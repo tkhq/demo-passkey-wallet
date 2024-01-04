@@ -50,8 +50,8 @@ func ginErrorLogMiddleware(c *gin.Context) {
 	c.Next()
 	statusCode := c.Writer.Status()
 	if statusCode >= 500 {
-		//ok this is an request with error, let's make a record for it
-		// now print body (or log in your preferred way)
+		// This is a request with an error, let's make a record for it
+		// and print body (or log in your preferred way)
 		fmt.Printf("Internal error served: %s (status: %d)\n", blw.body.String(), statusCode)
 	}
 }
@@ -85,8 +85,14 @@ func main() {
 		MaxAge:           600,
 	}))
 
+	sameSite := http.SameSiteStrictMode
+	if os.Getenv("ENVIRONMENT") == "preprod" {
+		// only preprod makes cross-origin requests
+		sameSite = http.SameSiteNoneMode
+	}
+
 	store := gormsessions.NewStore(db.Database, true, []byte(SESSION_SALT))
-	store.Options(sessions.Options{MaxAge: 60 * 60 * 24}) // sessions expire daily
+	store.Options(sessions.Options{MaxAge: 60 * 60 * 24, Secure: true, SameSite: sameSite}) // sessions expire daily
 	router.Use(sessions.Sessions(SESSION_NAME, store))
 
 	err := turnkey.Init(
@@ -179,7 +185,7 @@ func main() {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		fmt.Printf("Private key successfully saved: %v", pk)
+		fmt.Printf("Private key successfully saved: %+v\n", pk)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Account successfully created")
@@ -503,7 +509,7 @@ func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session.Set(SESSION_USER_ID_KEY, userId)
 	err := session.Save()
 	if err != nil {
-		log.Printf("error while saving session for user %d: %+v", userId, err)
+		fmt.Printf("error while saving session for user %d: %+v", userId, err)
 	}
 }
 
