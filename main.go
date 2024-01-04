@@ -66,6 +66,11 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 
+	clientOrigin := os.Getenv("CLIENT_ORIGIN")
+	if clientOrigin == "" {
+		log.Fatal("$CLIENT_ORIGIN must be set")
+	}
+
 	router := gin.New()
 	router.Use(gin.Recovery())
 
@@ -73,7 +78,7 @@ func main() {
 	router.Use(ginErrorLogMiddleware)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3456", "https://wallet.tx.xyz"},
+		AllowOrigins:     []string{clientOrigin},
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
@@ -111,7 +116,7 @@ func main() {
 	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "This is the Demo Passkey Wallet backend. Welcome I guess? Head to https://wallet.tx.xyz if you're lost.")
+		ctx.String(http.StatusOK, fmt.Sprintf("This is the Demo Passkey Wallet backend. Welcome I guess? Head to %s if you're lost.", clientOrigin))
 	})
 
 	router.GET("/api/whoami", func(ctx *gin.Context) {
