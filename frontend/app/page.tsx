@@ -1,6 +1,6 @@
-import { AuthWidget } from '@/components/AuthWidget'
-import { Footer } from '@/components/Footer'
-import Image from 'next/image'
+import { AuthWidget } from "@/components/AuthWidget";
+import { Footer } from "@/components/Footer";
+import Image from "next/image";
 
 export default async function Home() {
   return (
@@ -23,26 +23,27 @@ export default async function Home() {
         <div className="flex flex-col min-h-screen">
           <div className="grid grid-cols-3 flex-none mb-2">
             <div className="col-span-2 mt-4">
-                <Image
+              <Image
                 className={`inline-block lg:invert`}
                 src="/turnkey_logo_black.svg"
                 alt="Turnkey Logo"
                 width={110}
                 height={30}
                 priority
-                />
+              />
             </div>
-
 
             <div className="col-span-1">
-                <AuthWidget></AuthWidget>
+              <AuthWidget></AuthWidget>
             </div>
           </div>
-          <h1 className="favorit text-5xl mt-8 lg:mt-2">
-              Demo passkey wallet
-          </h1>
+          <h1 className="favorit text-5xl mt-8 lg:mt-2">Demo passkey wallet</h1>
           <p className="mt-8 mb-8 lg:mb-2">
-            Using Turnkey’s flexible infrastructure, you can programmatically create and manage non-custodial wallets for your end users. This demo shows how users can use passkeys to create a testnet Ethereum address and send a transaction. You can then use our SDK to implement this experience right into your app.
+            Using Turnkey’s flexible infrastructure, you can programmatically
+            create and manage non-custodial wallets for your end users. This
+            demo shows how users can use passkeys to create a testnet Ethereum
+            address and send a transaction. You can then use our SDK to
+            implement this experience right into your app.
           </p>
 
           <div className="mb-32 grid text-center lg:mb-0 lg:mt-8 lg:grid-cols-3 lg:text-left grow">
@@ -53,7 +54,7 @@ export default async function Home() {
               rel="noopener noreferrer"
             >
               <h2 className={`mb-3 text-2xl favorit`}>
-                Non-Custodial{' '}
+                Non-Custodial{" "}
                 <Image
                   className={`inline-block align-bottom transition-transform group-hover:translate-x-1 group-hover:-translate-y-1`}
                   src="/arrow.svg"
@@ -64,7 +65,8 @@ export default async function Home() {
                 />
               </h2>
               <p className={`m-0 mx-auto max-w-[40ch] text-sm opacity-75`}>
-                Only you can access your keys. Checkout our API-reference for more details.
+                Only you can access your keys. Checkout our API-reference for
+                more details.
               </p>
             </a>
 
@@ -75,7 +77,7 @@ export default async function Home() {
               rel="noopener noreferrer"
             >
               <h2 className={`mb-3 text-2xl favorit`}>
-                Passwordless{' '}
+                Passwordless{" "}
                 <Image
                   className={`inline-block align-bottom transition-transform group-hover:translate-x-1 group-hover:-translate-y-1`}
                   src="/arrow.svg"
@@ -86,7 +88,8 @@ export default async function Home() {
                 />
               </h2>
               <p className={`m-0 mx-auto max-w-[40ch] text-sm opacity-75`}>
-                We use Passkeys to offer the best user experience and security in one. Learn more.
+                We use Passkeys to offer the best user experience and security
+                in one. Learn more.
               </p>
             </a>
 
@@ -97,7 +100,7 @@ export default async function Home() {
               rel="noopener noreferrer"
             >
               <h2 className={`mb-3 text-2xl favorit`}>
-                Open-source{' '}
+                Open-source{" "}
                 <Image
                   className={`inline-block align-bottom transition-transform group-hover:translate-x-1 group-hover:-translate-y-1`}
                   src="/arrow.svg"
@@ -108,7 +111,8 @@ export default async function Home() {
                 />
               </h2>
               <p className={`m-0 mx-auto max-w-[40ch] text-sm opacity-75`}>
-                Curious about how this is built? Check out the code for yourself!
+                Curious about how this is built? Check out the code for
+                yourself!
               </p>
             </a>
           </div>
@@ -116,5 +120,5 @@ export default async function Home() {
         </div>
       </div>
     </main>
-  )
+  );
 }

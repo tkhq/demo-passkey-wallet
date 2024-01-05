@@ -36,7 +36,7 @@ export function Export(props: ExportProps) {
       if (iframeStamper) {
         iframeStamper.clear();
         setIframeStamper(null);
-        setParentIframeStamper(null)
+        setParentIframeStamper(null);
       }
     };
   }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
@@ -49,8 +49,12 @@ export function Export(props: ExportProps) {
   `;
 
   return (
-    <div className="space-y-4 p-4 max-w-lg m-auto" style={{ display: props.iframeDisplay }} id={TurnkeyIframeContainerId}>
-          <style>{iframeCss}</style>
+    <div
+      className="space-y-4 p-4 max-w-lg m-auto"
+      style={{ display: props.iframeDisplay }}
+      id={TurnkeyIframeContainerId}
+    >
+      <style>{iframeCss}</style>
     </div>
-  )
+  );
 }
