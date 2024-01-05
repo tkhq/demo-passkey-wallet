@@ -34,29 +34,29 @@ export function Recovery(props: RecoveryProps) {
 
     return () => {
       if (iframeStamper) {
-        console.log("clearing iframe")
+        console.log("clearing iframe");
         iframeStamper.clear();
         setIframeStamper(null);
-        setParentIframeStamper(null)
+        setParentIframeStamper(null);
       }
     };
   }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.code == "KeyI" && e.metaKey == true) {
-            if (iframeDisplay == "block") {
-                setIframeDisplay("none");
-            } else {
-                setIframeDisplay("block");
-            }
+      if (e.code == "KeyI" && e.metaKey == true) {
+        if (iframeDisplay == "block") {
+          setIframeDisplay("none");
+        } else {
+          setIframeDisplay("block");
         }
+      }
     };
-    document.addEventListener('keydown', handleKeyDown, false);
+    document.addEventListener("keydown", handleKeyDown, false);
 
     // remove the event listener as a cleanup step
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [iframeDisplay, setIframeDisplay]);
 
@@ -68,8 +68,12 @@ export function Recovery(props: RecoveryProps) {
   `;
 
   return (
-    <div className="space-y-4 p-4 max-w-lg mx-auto" style={{ display: iframeDisplay }} id={TurnkeyIframeContainerId}>
-          <style>{iframeCss}</style>
+    <div
+      className="space-y-4 p-4 max-w-lg mx-auto"
+      style={{ display: iframeDisplay }}
+      id={TurnkeyIframeContainerId}
+    >
+      <style>{iframeCss}</style>
     </div>
-  )
+  );
 }
