@@ -46,22 +46,33 @@ func ConstructTransfer(from string, to string, amount *big.Int) ([]byte, error) 
 	fromAddress := parseAddress(from)
 	toAddress := parseAddress(to)
 
+	// Additional context on gas parameters can be found here:
+	// https://github.com/ethereum/pm/issues/328#issuecomment-853612573
+	gasPrice, err := Client.SuggestGasPrice(ctx)
+	if err != nil {
+		return []byte{}, errors.Wrapf(err, "cannot fetch suggested gas price")
+	}
+
+	gasTipCap, err := Client.SuggestGasTipCap(ctx)
+	if err != nil {
+		return []byte{}, errors.Wrapf(err, "cannot fetch suggested gas tip cap")
+	}
+
+	// Double the tip for timely execution
+	multipliedGasTip := new(big.Int).Mul(gasTipCap, big.NewInt(2))
+
 	nonce, err := Client.PendingNonceAt(ctx, fromAddress)
 	if err != nil {
 		return []byte{}, errors.Wrapf(err, "cannot fetch nonce for address %s", from)
 	}
 
 	gasLimit := uint64(21000)
-	// maxPriorityFeePerGas = 2 Gwei
-	tip := big.NewInt(2000000000)
-	// maxFeePerGas = 20 Gwei
-	feeCap := big.NewInt(20000000000)
 
 	return messageToSign(types.NewTx(&types.DynamicFeeTx{
 		ChainID:   params.SepoliaChainConfig.ChainID,
 		Nonce:     nonce,
-		GasFeeCap: feeCap,
-		GasTipCap: tip,
+		GasFeeCap: gasPrice,
+		GasTipCap: multipliedGasTip,
 		Gas:       gasLimit,
 		To:        &toAddress,
 		Value:     amount,
