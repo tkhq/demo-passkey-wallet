@@ -41,7 +41,7 @@ func GetBalance(addressString string) (*big.Int, error) {
 	return balance, nil
 }
 
-func ConstructTransfer(from string, to string, amount *big.Int) ([]byte, error) {
+func ConstructTransfer(from string, to string, amount *big.Int, nonce *uint64) ([]byte, error) {
 	ctx := context.Background()
 	fromAddress := parseAddress(from)
 	toAddress := parseAddress(to)
@@ -58,20 +58,26 @@ func ConstructTransfer(from string, to string, amount *big.Int) ([]byte, error) 
 		return []byte{}, errors.Wrapf(err, "cannot fetch suggested gas tip cap")
 	}
 
-	// Double the tip for timely execution
+	// Double both the gas price and tip for timely execution
+	multipliedGasPrice := new(big.Int).Mul(gasPrice, big.NewInt(2))
 	multipliedGasTip := new(big.Int).Mul(gasTipCap, big.NewInt(2))
 
-	nonce, err := Client.PendingNonceAt(ctx, fromAddress)
-	if err != nil {
-		return []byte{}, errors.Wrapf(err, "cannot fetch nonce for address %s", from)
+	var suggestedNonce uint64
+	if nonce != nil {
+		suggestedNonce = *nonce
+	} else {
+		suggestedNonce, err = Client.PendingNonceAt(ctx, fromAddress)
+		if err != nil {
+			return []byte{}, errors.Wrapf(err, "cannot fetch nonce for address %s", from)
+		}
 	}
 
 	gasLimit := uint64(21000)
 
 	return messageToSign(types.NewTx(&types.DynamicFeeTx{
 		ChainID:   params.SepoliaChainConfig.ChainID,
-		Nonce:     nonce,
-		GasFeeCap: gasPrice,
+		Nonce:     suggestedNonce,
+		GasFeeCap: multipliedGasPrice,
 		GasTipCap: multipliedGasTip,
 		Gas:       gasLimit,
 		To:        &toAddress,
