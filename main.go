@@ -263,7 +263,7 @@ func main() {
 			return
 		}
 
-		unsignedDropTx, err := ethereum.ConstructTransfer(turnkeyWarchestPrivateKeyAddress, wallet.EthereumAddress, big.NewInt(DROP_AMOUNT_IN_WEI))
+		unsignedDropTx, err := ethereum.ConstructTransfer(turnkeyWarchestPrivateKeyAddress, wallet.EthereumAddress, big.NewInt(DROP_AMOUNT_IN_WEI), nil)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct drop transfer").Error())
 			return
@@ -320,7 +320,7 @@ func main() {
 			return
 		}
 
-		unsignedTransaction, err := ethereum.ConstructTransfer(wallet.EthereumAddress, params.Destination, big.NewInt(int64(amount*float64(ONE_ETH_IN_WEI))))
+		unsignedTransaction, err := ethereum.ConstructTransfer(wallet.EthereumAddress, params.Destination, big.NewInt(int64(amount*float64(ONE_ETH_IN_WEI))), nil)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to construct transaction").Error())
 			return
