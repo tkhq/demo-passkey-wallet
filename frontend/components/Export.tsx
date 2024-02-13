@@ -22,7 +22,7 @@ export function Export(props: ExportProps) {
     if (!iframeStamper) {
       const iframeStamper = new IframeStamper({
         iframeUrl: iframeUrl,
-        iframeContainerId: TurnkeyIframeContainerId,
+        iframeContainer: document.getElementById("TurnkeyIframeContainerId"),
         iframeElementId: TurnkeyIframeElementId,
       });
 
@@ -43,17 +43,16 @@ export function Export(props: ExportProps) {
 
   const iframeCss = `
   iframe {
-      width: 100%;
-      height: 340px;
+    width: 100%;
+    height: 340px;
   }
   `;
 
   return (
     <div
-      className="space-y-4 p-4 max-w-lg m-auto"
+      className="space-y-4 p-4 max-w-lg m-auto border-solid border-1"
       style={{ display: props.iframeDisplay }}
-      id={TurnkeyIframeContainerId}
-    >
+      id={TurnkeyIframeContainerId}>
       <style>{iframeCss}</style>
     </div>
   );
