@@ -117,7 +117,7 @@ export default function RecoveryPage() {
     }
 
     try {
-      await iframeStamper.injectRecoveryBundle(data.bundle);
+      await iframeStamper.injectCredentialBundle(data.bundle);
     } catch (e: any) {
       throw new Error(
         "unexpected error while injecting recovery bundle: " + e.toString()

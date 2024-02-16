@@ -22,7 +22,7 @@ export function Recovery(props: RecoveryProps) {
     if (!iframeStamper) {
       const iframeStamper = new IframeStamper({
         iframeUrl: iframeUrl,
-        iframeContainerId: TurnkeyIframeContainerId,
+        iframeContainer: document.getElementById(TurnkeyIframeContainerId),
         iframeElementId: TurnkeyIframeElementId,
       });
 
