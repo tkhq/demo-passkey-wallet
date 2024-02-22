@@ -2,15 +2,15 @@
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-interface RecoveryProps {
+interface EmailAuthProps {
   iframeUrl: string;
   setIframeStamper: Dispatch<SetStateAction<IframeStamper | null>>;
 }
 
-const TurnkeyIframeContainerId = "turnkey-iframe-container-id";
-const TurnkeyIframeElementId = "turnkey-iframe-element-id";
+const TurnkeyIframeContainerId = "turnkey-auth-iframe-container-id";
+const TurnkeyIframeElementId = "turnkey-auth-iframe-element-id";
 
-export function Recovery(props: RecoveryProps) {
+export function EmailAuth(props: EmailAuthProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
@@ -32,13 +32,9 @@ export function Recovery(props: RecoveryProps) {
       });
     }
 
-    return () => {
-      if (iframeStamper) {
-        iframeStamper.clear();
-        setIframeStamper(null);
-        setParentIframeStamper(null);
-      }
-    };
+    // Unlike some other components, don't automatically clear the iframestamper if it's present.
+    // This is because we want to persist the iframestamper in the case that we've authenticated with email.
+    return () => {};
   }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
 
   useEffect(() => {

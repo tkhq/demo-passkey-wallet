@@ -281,10 +281,16 @@ export default function Auth() {
               </button>
             </div>
           </form>
+
+          <div className="px-4 max-w-lg mx-auto flex justify-center space-x-2">
+            <button className="w-full justify-center rounded-md bg-gray-200 py-3 text-sm font-semibold text-black shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
+              <Link href={"/recovery"}>Recover your wallet</Link>
+            </button>
+            <button className="w-full justify-center rounded-md bg-gray-200 py-3 text-sm font-semibold text-black shadow-sm hover:bg-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75">
+              <Link href={"/email-auth"}>Log in with email</Link>
+            </button>
+          </div>
         </div>
-        <Link className="block w-full text-center mt-0" href={"/recovery"}>
-          Lost access to your passkey? Recover your wallet here.
-        </Link>
         <Link className="block w-full text-center mt-6" href={"/"}>
           Go back home
         </Link>

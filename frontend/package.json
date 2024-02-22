@@ -11,9 +11,9 @@
     "prettier-all:write": "prettier --write \"**/*.{css,html,js,json,md,ts,tsx,yaml,yml}\" --ignore-path ./.prettierignore"
   },
   "dependencies": {
-    "@turnkey/http": "^2.4.2",
-    "@turnkey/webauthn-stamper": "^0.4.2",
-    "@turnkey/iframe-stamper": "^0.3.0",
+    "@turnkey/http": "^2.7.1",
+    "@turnkey/webauthn-stamper": "^0.5.0",
+    "@turnkey/iframe-stamper": "^1.0.0",
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",
     "@types/react-dom": "18.2.6",

@@ -17,7 +17,8 @@ import (
 	"github.com/tkhq/go-sdk/pkg/api/client/organizations"
 	"github.com/tkhq/go-sdk/pkg/api/client/private_keys"
 	"github.com/tkhq/go-sdk/pkg/api/client/sessions"
-	"github.com/tkhq/go-sdk/pkg/api/client/signers"
+	"github.com/tkhq/go-sdk/pkg/api/client/signing"
+	"github.com/tkhq/go-sdk/pkg/api/client/user_auth"
 	"github.com/tkhq/go-sdk/pkg/api/client/user_recovery"
 
 	"github.com/tkhq/go-sdk/pkg/api/models"
@@ -254,7 +255,7 @@ func (c *TurnkeyApiClient) CreateUserSubOrganization(userEmail string, attestati
 func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith string, unsignedTransaction string) (string, error) {
 	timestamp := util.RequestTimestamp()
 
-	p := signers.NewSignTransactionParams().WithBody(&models.SignTransactionRequest{
+	p := signing.NewSignTransactionParams().WithBody(&models.SignTransactionRequest{
 		OrganizationID: &organizationId,
 		Parameters: &models.SignTransactionIntentV2{
 			SignWith:            &signWith,
@@ -265,7 +266,7 @@ func (c *TurnkeyApiClient) SignTransaction(organizationId string, signWith strin
 		Type:        (*string)(models.ActivityTypeSignTransactionV2.Pointer()),
 	})
 
-	activityResponse, err := c.Client.Signers.SignTransaction(p, c.GetAuthenticator())
+	activityResponse, err := c.Client.Signing.SignTransaction(p, c.GetAuthenticator())
 	if err != nil {
 		return "", err
 	}
@@ -319,6 +320,31 @@ func (c *TurnkeyApiClient) InitRecovery(subOrganizationId, email, targetPublicKe
 	}
 
 	return *result.InitUserEmailRecoveryResult.UserID, nil
+}
+
+// Initiates email auth for a given sub-organization user
+func (c *TurnkeyApiClient) EmailAuth(subOrganizationId, email, targetPublicKey string) (string, string, error) {
+	p := user_auth.NewEmailAuthParams().WithBody(&models.EmailAuthRequest{
+		OrganizationID: &subOrganizationId,
+		Parameters: &models.EmailAuthIntent{
+			Email:           &email,
+			TargetPublicKey: &targetPublicKey,
+		},
+		TimestampMs: util.RequestTimestamp(),
+		Type:        (*string)(models.ActivityTypeEmailAuth.Pointer().Pointer()),
+	})
+
+	activityResponse, err := c.Client.UserAuth.EmailAuth(p, c.GetAuthenticator())
+	if err != nil {
+		return "", "", err
+	}
+
+	result, err := c.WaitForResult(subOrganizationId, *activityResponse.Payload.Activity.ID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return *result.EmailAuthResult.UserID, *result.EmailAuthResult.APIKeyID, nil
 }
 
 // Utility to wait for an activity result

@@ -5,66 +5,63 @@ import { TurnkeyClient, getWebAuthnAttestation } from "@turnkey/http";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { ErrorMessage } from "@hookform/error-message";
-import { initEmailRecoveryUrl, recoverUrl } from "../../utils/urls";
+import { useSWRConfig } from "swr";
+import {
+  authenticateUrl,
+  emailAuthUrl,
+  turnkeyWhoami,
+  whoamiUrl,
+} from "../../utils/urls";
 import { validateAuthenticatorLabel } from "../../utils/validation";
 import { useAuth } from "@/components/context/auth.context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IframeStamper } from "@turnkey/iframe-stamper";
-import { Recovery } from "@/components/Recovery";
+import { EmailAuth } from "@/components/EmailAuth";
 
 const DEMO_PASSKEY_WALLET_RPID =
   process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
 
-type RecoveryFormData = {
+// kick off email auth
+type InitEmailAuthFormData = {
   email: string;
 };
 
-type RecoverFormData = {
+// inject email auth bundle
+type EmailAuthFormData = {
   bundle: string;
-  authenticatorName: string;
 };
 
-// Info necessary to perform `RECOVER_USER` activities
-type RecoverUserInfo = {
+// Info necessary to perform `EMAIL_AUTH` activities
+type EmailAuthUserInfo = {
   organizationId: string;
   userId: string;
+  apiKeyId: string;
 };
 
-const generateRandomBuffer = (): ArrayBuffer => {
-  const arr = new Uint8Array(32);
-  crypto.getRandomValues(arr);
-  return arr.buffer;
-};
-
-const base64UrlEncode = (challenge: ArrayBuffer): string => {
-  return Buffer.from(challenge)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-};
-
-export default function RecoveryPage() {
+export default function EmailAuthPage() {
   const [disabledSubmit, setDisabledSubmit] = useState(false);
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
-  const [recoverUserInfo, setRecoverUserInfo] =
-    useState<RecoverUserInfo | null>(null);
-
+  const [emailAuthUserInfo, setEmailAuthUserInfo] =
+    useState<EmailAuthUserInfo | null>(null);
   const { state } = useAuth();
+  const { mutate } = useSWRConfig();
   const router = useRouter();
-  const { register: recoveryFormRegister, handleSubmit: recoveryFormSubmit } =
-    useForm<RecoveryFormData>();
   const {
-    register: recoverFormRegister,
-    formState: recoverFormState,
-    handleSubmit: recoverFormSubmit,
-  } = useForm<RecoverFormData>();
+    register: initEmailAuthFormRegister,
+    handleSubmit: initEmailAuthFormSubmit,
+  } = useForm<InitEmailAuthFormData>();
+  const {
+    register: emailAuthFormRegister,
+    formState: emailAuthFormState,
+    handleSubmit: emailAuthFormSubmit,
+  } = useForm<EmailAuthFormData>();
 
   useEffect(() => {
+    // can probably check if local storage contains auth bundle
     if (state.isLoggedIn === true) {
       // Redirect the user to their dashboard if already logged in
       router.push("/dashboard");
@@ -74,24 +71,25 @@ export default function RecoveryPage() {
 
   /**
    * This function looks up whether a given email is registered with our backend
-   * If it is registered, it initializes recovery with Turnkey, which triggers an email
+   * If it is registered, it initializes email auth with Turnkey, which triggers an email.
    * If it isn't, an error is returned.
    * @param data form data from the authentication form.
    */
-  async function initRecovery(data: RecoveryFormData) {
+  async function initEmailAuth(data: InitEmailAuthFormData) {
     if (iframeStamper === null) {
-      throw new Error("cannot perform initRecovery without an iframeStamper");
+      throw new Error("cannot perform initEmailAuth without an iframeStamper");
     }
     setDisabledSubmit(true);
 
     try {
-      const res = await axios.post(initEmailRecoveryUrl(), {
+      const res = await axios.post(emailAuthUrl(), {
         email: data.email,
         targetPublicKey: iframeStamper.publicKey(),
       });
       if (res.status == 200) {
-        setRecoverUserInfo({
+        setEmailAuthUserInfo({
           userId: res.data["userId"],
+          apiKeyId: res.data["apiKeyId"],
           organizationId: res.data["organizationId"],
         });
         setDisabledSubmit(false);
@@ -107,51 +105,31 @@ export default function RecoveryPage() {
     }
   }
 
-  // Performs the new passkey registration, then signs+posts the `RECOVER_USER` activity to Turnkey
-  async function recover(data: RecoverFormData) {
+  // NOTE: for email auth, this can really be any arbitrary activity, like creating a wallet/performing whoami/etc
+  async function injectBundle(data: EmailAuthFormData) {
     if (iframeStamper === null) {
       throw new Error("iframeStamper is null");
     }
-    if (recoverUserInfo === null) {
-      throw new Error("recoverUserInfo is null");
+    if (emailAuthUserInfo === null) {
+      throw new Error("emailAuthUserInfo is null");
     }
 
+    // TODO: do something with the bundle, and/or the iframestamper.
+    // set the bundle in local storage?
     try {
       await iframeStamper.injectCredentialBundle(data.bundle);
+
+      // Note: this comes with associated risk.
+      setItemWithExpiry(
+        "AUTH_BUNDLE",
+        data.bundle,
+        TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS
+      );
     } catch (e: any) {
       throw new Error(
-        "unexpected error while injecting recovery bundle: " + e.toString()
+        "unexpected error while injecting auth bundle: " + e.toString()
       );
     }
-
-    const challenge = generateRandomBuffer();
-    const authenticatorUserId = generateRandomBuffer();
-
-    const attestation = await getWebAuthnAttestation({
-      publicKey: {
-        rp: {
-          id: DEMO_PASSKEY_WALLET_RPID,
-          name: "Demo Passkey Wallet",
-        },
-        challenge,
-        pubKeyCredParams: [
-          {
-            type: "public-key",
-            alg: -7,
-          },
-        ],
-        user: {
-          id: authenticatorUserId,
-          name: data.authenticatorName,
-          displayName: data.authenticatorName,
-        },
-        authenticatorSelection: {
-          requireResidentKey: true,
-          residentKey: "required",
-          userVerification: "preferred",
-        },
-      },
-    });
 
     const client = new TurnkeyClient(
       {
@@ -160,32 +138,40 @@ export default function RecoveryPage() {
       iframeStamper
     );
 
-    const signedRequest = await client.stampRecoverUser({
-      type: "ACTIVITY_TYPE_RECOVER_USER",
-      timestampMs: String(Date.now()),
-      organizationId: recoverUserInfo.organizationId,
-      parameters: {
-        userId: recoverUserInfo.userId,
-        authenticator: {
-          authenticatorName: data.authenticatorName,
-          challenge: base64UrlEncode(challenge),
-          attestation: attestation,
-        },
-      },
+    // An example request that can be signed using the iframe stamper
+    const signedRequest = await client.stampGetWhoami({
+      organizationId: emailAuthUserInfo.organizationId,
     });
 
-    const res = await axios.post(recoverUrl(), {
-      signedRecoverRequest: signedRequest,
+    const whoamiRes = await axios.post(turnkeyWhoami(), {
+      signedWhoamiRequest: signedRequest,
     });
+
+    // OR you can make the request directly
+    const whoami = await client.getWhoami({
+      organizationId: emailAuthUserInfo.organizationId,
+    });
+
+    // save session in backend
+    const res = await axios.post(
+      authenticateUrl(),
+      {
+        signedWhoamiRequest: signedRequest,
+      },
+      { withCredentials: true }
+    );
 
     if (res.status === 200) {
       alert(
-        "SUCCESS! Authenticator added. Recovery flow complete. Try logging back in!"
+        `SUCCESS! You are now authenticated. Redirecting you to dashboard. Your suborg ID: ${whoami.organizationId}`
       );
-      window.location.replace("/auth");
+      // window.location.replace("/auth"); // redirect to dashboard
+      mutate(whoamiUrl());
+      router.push("/dashboard");
+      return;
     } else {
       console.error(
-        "unable to forward signed RECOVER_USER request to Turnkey: status code is " +
+        "unable to forward signed whoami request to Turnkey: status code is " +
           res.status
       );
       console.error(res);
@@ -219,22 +205,22 @@ export default function RecoveryPage() {
             alt="Demo Passkey Wallet Logo"
           />
           <h2 className="mt-4 text-center text-3xl favorit leading-9 tracking-tight text-zinc-900">
-            Recover your wallet
+            Log in with email
           </h2>
         </div>
 
         <div className="mt-10">
-          {!iframeStamper && !recoverUserInfo && (
+          {!iframeStamper && !emailAuthUserInfo && (
             <p className="space-y-4 p-4 max-w-lg mx-auto text-center">
               loading...
             </p>
           )}
-          {iframeStamper && iframeStamper.publicKey() && !recoverUserInfo && (
+          {iframeStamper && iframeStamper.publicKey() && !emailAuthUserInfo && (
             <form
               className="space-y-4 p-4 max-w-lg mx-auto"
               action="#"
               method="POST"
-              onSubmit={recoveryFormSubmit(initRecovery)}
+              onSubmit={initEmailAuthFormSubmit(initEmailAuth)}
             >
               <div>
                 <label
@@ -245,7 +231,7 @@ export default function RecoveryPage() {
                 </label>
                 <div className="mt-2">
                   <input
-                    {...recoveryFormRegister("email")}
+                    {...initEmailAuthFormRegister("email")}
                     disabled={disabledSubmit}
                     placeholder="Enter your email"
                     id="email"
@@ -264,18 +250,18 @@ export default function RecoveryPage() {
                   disabled={disabledSubmit}
                   className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                 >
-                  {disabledSubmit ? "Loading..." : "Start Recovery"}
+                  {disabledSubmit ? "Loading..." : "Log in with Email"}
                 </button>
               </div>
             </form>
           )}
-          {iframeStamper && iframeStamper.publicKey() && recoverUserInfo && (
+          {iframeStamper && iframeStamper.publicKey() && emailAuthUserInfo && (
             <>
               <div className="space-y-4 p-4 max-w-lg mx-auto text-center text-sm text-green-600 bg-green-100 border-solid border border-green-400">
                 <p>
-                  An email with your recovery code has been sent. <br />
+                  An email with your auth code has been sent. <br />
                   <b>
-                    Please do not close this tab before the end of the recovery
+                    Please do not close this tab before the end of the auth
                     process
                   </b>
                   .
@@ -283,19 +269,19 @@ export default function RecoveryPage() {
               </div>
               <form
                 className="space-y-4 p-4 max-w-lg mx-auto"
-                onSubmit={recoverFormSubmit(recover)}
+                onSubmit={emailAuthFormSubmit(injectBundle)}
               >
                 <div>
                   <label
                     htmlFor="bundle"
                     className="block text-sm font-medium leading-6 text-zinc-900"
                   >
-                    Recovery Code
+                    Auth Bundle
                   </label>
                   <div className="mt-2">
                     <input
-                      {...recoverFormRegister("bundle")}
-                      placeholder="Enter your recovery code"
+                      {...emailAuthFormRegister("bundle")}
+                      placeholder="Enter your auth bundle"
                       id="bundle"
                       name="bundle"
                       required
@@ -303,34 +289,6 @@ export default function RecoveryPage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <label
-                    htmlFor="authenticatorName"
-                    className="block text-sm font-medium leading-6 text-zinc-900"
-                  >
-                    Passkey Name
-                  </label>
-                  <div className="mt-2">
-                    <input
-                      {...recoverFormRegister("authenticatorName", {
-                        validate: validateAuthenticatorLabel,
-                      })}
-                      placeholder="Name your new passkey"
-                      id="authenticatorName"
-                      name="authenticatorName"
-                      required
-                      className="block w-full rounded-md border-0 p-1.5 text-zinc-900 shadow-sm ring-1 ring-inset ring-zinc-300 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-zinc-900 disabled:opacity-75 disabled:text-zinc-400"
-                    />
-                  </div>
-                </div>
-
-                <ErrorMessage
-                  errors={recoverFormState.errors}
-                  name="authenticatorName"
-                  render={({ message }) => (
-                    <p className="text-sm text-red-700">{message}</p>
-                  )}
-                />
 
                 <div>
                   <button
@@ -338,7 +296,7 @@ export default function RecoveryPage() {
                     disabled={disabledSubmit}
                     className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                   >
-                    {disabledSubmit ? "Loading..." : "Create New Passkey"}
+                    {disabledSubmit ? "Loading..." : "Who Am I?"}
                   </button>
                 </div>
               </form>
@@ -350,10 +308,54 @@ export default function RecoveryPage() {
         </Link>
       </div>
 
-      <Recovery
+      <EmailAuth
         setIframeStamper={setIframeStamper}
         iframeUrl={process.env.NEXT_PUBLIC_AUTH_IFRAME_URL!}
-      ></Recovery>
+      ></EmailAuth>
     </main>
   );
 }
+
+const TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS = 1000 * 60 * 60 * 1; // 1 hour in milliseconds
+
+/**
+ * Set an item in localStorage with an expiration time
+ * @param {string} key
+ * @param {string} value
+ * @param {number} ttl expiration time in milliseconds
+ */
+const setItemWithExpiry = function (key: string, value: string, ttl: number) {
+  const now = new Date();
+  const item = {
+    value: value,
+    expiry: now.getTime() + ttl,
+  };
+  window.localStorage.setItem(key, JSON.stringify(item));
+};
+
+/**
+ * Get an item from localStorage. If it has expired, remove
+ * the item from localStorage and return null.
+ * @param {string} key
+ */
+const getItemWithExpiry = (key: string) => {
+  const itemStr = window.localStorage.getItem(key);
+
+  if (!itemStr) {
+    return null;
+  }
+
+  const item = JSON.parse(itemStr);
+
+  if (!item.hasOwnProperty("expiry") || !item.hasOwnProperty("value")) {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+
+  const now = new Date();
+  if (now.getTime() > item.expiry) {
+    window.localStorage.removeItem(key);
+    return null;
+  }
+  return item.value;
+};

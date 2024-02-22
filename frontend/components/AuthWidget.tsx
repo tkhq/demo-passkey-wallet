@@ -13,6 +13,9 @@ export function AuthWidget() {
 
   const handleLogout = async () => {
     if (confirm("You are about to log out. Continue?") === true) {
+      // Clear local storage of any credentials/auth bundles
+      window.localStorage.removeItem("AUTH_BUNDLE");
+
       const res = await axios.post(logoutUrl(), {}, { withCredentials: true });
       if (res.status !== 204) {
         // We expect a 204 (no content) response from our backend
@@ -24,6 +27,9 @@ export function AuthWidget() {
         return;
       }
     }
+
+    // Confirm clearance of local storage
+    window.localStorage.removeItem("AUTH_BUNDLE");
   };
 
   if (state.isLoaded) {

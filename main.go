@@ -25,6 +25,7 @@ import (
 	"github.com/tkhq/demo-passkey-wallet/internal/models"
 	"github.com/tkhq/demo-passkey-wallet/internal/turnkey"
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
+	"google.golang.org/grpc/status"
 )
 
 const SESSION_NAME = "demo_session"
@@ -137,6 +138,41 @@ func main() {
 		}
 	})
 
+	// Whereas the above performs a "local" whoami in the context of this demo app,
+	// this endpoint forwards a stamped whoami request to Turnkey.
+	router.POST("/api/turnkey-whoami", func(ctx *gin.Context) {
+		var req types.WhoamiRequest
+		err := ctx.BindJSON(&req)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
+		if err != nil {
+			err = errors.Wrap(err, "error while forwarding signed send transaction request")
+			ctx.JSON(http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		if status != 200 {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("expected 200 when forwarding signed transaction request. Got %d", status))
+			return
+		}
+
+		subOrganizationId := gjson.Get(string(bodyBytes), "organizationId").String()
+		subOrganizationName := gjson.Get(string(bodyBytes), "organizationName").String()
+		userId := gjson.Get(string(bodyBytes), "userId").String()
+		username := gjson.Get(string(bodyBytes), "username").String()
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"subOrganizationId":   subOrganizationId,
+			"subOrganizationName": subOrganizationName,
+			"userId":              userId,
+			"username":            username,
+		})
+	})
+
 	router.GET("/api/registration/:email", func(ctx *gin.Context) {
 		email := ctx.Param("email")
 		user, err := models.FindUserByEmail(email)
@@ -179,7 +215,7 @@ func main() {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		fmt.Printf("Private key successfully saved: %v", pk)
+		fmt.Printf("Wallet account successfully saved: %v", pk)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Account successfully created")
@@ -192,19 +228,26 @@ func main() {
 			return
 		}
 
-		status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
-		if err != nil {
-			err = errors.Wrap(err, "error while forwarding signed whoami request")
-			ctx.JSON(http.StatusInternalServerError, err.Error())
-			return
+		var subOrganizationId string
+
+		if req.SubOrganizationId != "" {
+			subOrganizationId = req.SubOrganizationId
+		} else {
+			status, bodyBytes, err := turnkey.Client.ForwardSignedRequest(req.SignedWhoamiRequest.Url, req.SignedWhoamiRequest.Body, req.SignedWhoamiRequest.Stamp)
+			if err != nil {
+				err = errors.Wrap(err, "error while forwarding signed whoami request")
+				ctx.JSON(http.StatusInternalServerError, err.Error())
+				return
+			}
+
+			if status != 200 {
+				ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("expected 200 when forwarding whoami request. Got %d", status))
+				return
+			}
+
+			subOrganizationId = gjson.Get(string(bodyBytes), "organizationId").String()
 		}
 
-		if status != 200 {
-			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("expected 200 when forwarding whoami request. Got %d", status))
-			return
-		}
-
-		subOrganizationId := gjson.Get(string(bodyBytes), "organizationId").String()
 		user, err := models.FindUserBySubOrganizationId(subOrganizationId)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Unable to find user for suborg ID %s", subOrganizationId))
@@ -374,6 +417,33 @@ func main() {
 		})
 	})
 
+	router.POST("/api/wallet/broadcast-tx", func(ctx *gin.Context) {
+		var params types.BroadcastTxParams
+		err := ctx.BindJSON(&params)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		fmt.Printf("PARAMS: %v\n", params)
+
+		user := getCurrentUser(ctx)
+		if user == nil {
+			ctx.String(http.StatusForbidden, "no current user")
+			return
+		}
+
+		hash, err := ethereum.BroadcastTransaction(params.SignedSendTx)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", params.SignedSendTx))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"hash": hash,
+		})
+	})
+
 	router.GET("/api/wallet/history", func(ctx *gin.Context) {
 		user := getCurrentUser(ctx)
 		if user == nil {
@@ -468,6 +538,44 @@ func main() {
 		ctx.JSON(http.StatusOK, map[string]interface{}{})
 	})
 
+	router.POST("/api/email-auth", func(ctx *gin.Context) {
+		var params types.EmailAuthParams
+		err := ctx.BindJSON(&params)
+		if err != nil {
+			ctx.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		fmt.Printf("PARAMS: %v\n", params)
+
+		user, err := models.FindUserByEmail(params.Email)
+		if err != nil {
+			ctx.String(http.StatusForbidden, "no user found")
+			return
+		}
+		subOrganizationId := user.SubOrganizationId.String
+
+		fmt.Printf("USER: %v\n", user)
+
+		turnkeyUserUuid, turnkeyUserApiKeyId, err := turnkey.Client.EmailAuth(subOrganizationId, user.Email, params.TargetPublicKey)
+		if err != nil {
+			ctx.String(http.StatusInternalServerError, fmt.Sprintf("error while performing email auth: %s", err.Error()))
+
+			fmt.Printf("FULL ERROR: %v\n", err)
+
+			st, _ := status.FromError(err)
+			fmt.Printf("STATUS: %v\n", st)
+			fmt.Printf("DETAILS: %v\n", st.Details())
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface{}{
+			"userId":         turnkeyUserUuid,
+			"organizationId": subOrganizationId,
+			"apiKeyId":       turnkeyUserApiKeyId,
+		})
+	})
+
 	router.Run(":" + port)
 }
 
@@ -507,6 +615,7 @@ func startUserLoginSession(ctx *gin.Context, userId uint) {
 	}
 }
 
+// TODO: make sure iframe creds are cleared
 func endUserSession(ctx *gin.Context) {
 	session := sessions.Default(ctx)
 	userIdOrNil := session.Get(SESSION_USER_ID_KEY)
