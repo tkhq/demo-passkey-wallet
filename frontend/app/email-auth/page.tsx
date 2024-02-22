@@ -4,7 +4,6 @@ import Image from "next/image";
 import { TurnkeyClient, getWebAuthnAttestation } from "@turnkey/http";
 import axios from "axios";
 import { useForm } from "react-hook-form";
-import { ErrorMessage } from "@hookform/error-message";
 import { useSWRConfig } from "swr";
 import {
   authenticateUrl,
@@ -12,7 +11,7 @@ import {
   turnkeyWhoami,
   whoamiUrl,
 } from "../../utils/urls";
-import { validateAuthenticatorLabel } from "../../utils/validation";
+import { setItemWithExpiry, TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS } from "@/utils/localStorage";
 import { useAuth } from "@/components/context/auth.context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,20 +19,14 @@ import Link from "next/link";
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import { EmailAuth } from "@/components/EmailAuth";
 
-const DEMO_PASSKEY_WALLET_RPID =
-  process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
-
-// kick off email auth
 type InitEmailAuthFormData = {
   email: string;
 };
 
-// inject email auth bundle
 type EmailAuthFormData = {
   bundle: string;
 };
 
-// Info necessary to perform `EMAIL_AUTH` activities
 type EmailAuthUserInfo = {
   organizationId: string;
   userId: string;
@@ -143,7 +136,7 @@ export default function EmailAuthPage() {
       organizationId: emailAuthUserInfo.organizationId,
     });
 
-    const whoamiRes = await axios.post(turnkeyWhoami(), {
+    const _whoamiRes = await axios.post(turnkeyWhoami(), {
       signedWhoamiRequest: signedRequest,
     });
 
@@ -165,7 +158,6 @@ export default function EmailAuthPage() {
       alert(
         `SUCCESS! You are now authenticated. Redirecting you to dashboard. Your suborg ID: ${whoami.organizationId}`
       );
-      // window.location.replace("/auth"); // redirect to dashboard
       mutate(whoamiUrl());
       router.push("/dashboard");
       return;
@@ -250,7 +242,7 @@ export default function EmailAuthPage() {
                   disabled={disabledSubmit}
                   className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                 >
-                  {disabledSubmit ? "Loading..." : "Log in with Email"}
+                  {disabledSubmit ? "Loading..." : "Log in with email"}
                 </button>
               </div>
             </form>
@@ -296,7 +288,7 @@ export default function EmailAuthPage() {
                     disabled={disabledSubmit}
                     className="w-full justify-center rounded-md bg-zinc-900 py-3 text-sm font-semibold text-white shadow-sm hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:hover:bg-zinc-900 disabled:opacity-75"
                   >
-                    {disabledSubmit ? "Loading..." : "Who Am I?"}
+                    {disabledSubmit ? "Loading..." : "Authenticate"}
                   </button>
                 </div>
               </form>
@@ -309,53 +301,10 @@ export default function EmailAuthPage() {
       </div>
 
       <EmailAuth
+        shouldClear={true}
         setIframeStamper={setIframeStamper}
         iframeUrl={process.env.NEXT_PUBLIC_AUTH_IFRAME_URL!}
       ></EmailAuth>
     </main>
   );
 }
-
-const TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS = 1000 * 60 * 60 * 1; // 1 hour in milliseconds
-
-/**
- * Set an item in localStorage with an expiration time
- * @param {string} key
- * @param {string} value
- * @param {number} ttl expiration time in milliseconds
- */
-const setItemWithExpiry = function (key: string, value: string, ttl: number) {
-  const now = new Date();
-  const item = {
-    value: value,
-    expiry: now.getTime() + ttl,
-  };
-  window.localStorage.setItem(key, JSON.stringify(item));
-};
-
-/**
- * Get an item from localStorage. If it has expired, remove
- * the item from localStorage and return null.
- * @param {string} key
- */
-const getItemWithExpiry = (key: string) => {
-  const itemStr = window.localStorage.getItem(key);
-
-  if (!itemStr) {
-    return null;
-  }
-
-  const item = JSON.parse(itemStr);
-
-  if (!item.hasOwnProperty("expiry") || !item.hasOwnProperty("value")) {
-    window.localStorage.removeItem(key);
-    return null;
-  }
-
-  const now = new Date();
-  if (now.getTime() > item.expiry) {
-    window.localStorage.removeItem(key);
-    return null;
-  }
-  return item.value;
-};

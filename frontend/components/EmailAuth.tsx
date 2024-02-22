@@ -3,6 +3,7 @@ import { IframeStamper } from "@turnkey/iframe-stamper";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 interface EmailAuthProps {
+  shouldClear: boolean;
   iframeUrl: string;
   setIframeStamper: Dispatch<SetStateAction<IframeStamper | null>>;
 }
@@ -14,8 +15,7 @@ export function EmailAuth(props: EmailAuthProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
-  const iframeUrl = props.iframeUrl;
-  const setParentIframeStamper = props.setIframeStamper;
+  const { shouldClear, iframeUrl, setIframeStamper: setParentIframeStamper } = props;
   const [iframeDisplay, setIframeDisplay] = useState("none");
 
   useEffect(() => {
@@ -34,8 +34,14 @@ export function EmailAuth(props: EmailAuthProps) {
 
     // Unlike some other components, don't automatically clear the iframestamper if it's present.
     // This is because we want to persist the iframestamper in the case that we've authenticated with email.
-    return () => {};
-  }, [iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
+    return () => {
+      if (iframeStamper && shouldClear) {
+        iframeStamper.clear();
+        setIframeStamper(null);
+        setParentIframeStamper(null);
+      }
+    };
+  }, [shouldClear, iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

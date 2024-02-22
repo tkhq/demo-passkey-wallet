@@ -4,17 +4,26 @@ import { useAuth } from "./context/auth.context";
 import axios from "axios";
 import { logoutUrl, whoamiUrl } from "@/utils/urls";
 import { useSWRConfig } from "swr";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
-export function AuthWidget() {
+interface AuthWidgetProps {
+  setShouldClearIframe?: Dispatch<SetStateAction<boolean>>;
+}
+
+export function AuthWidget(props: AuthWidgetProps) {
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const { state } = useAuth();
   const pathName = usePathname();
+  const { setShouldClearIframe } = props;
 
   const handleLogout = async () => {
     if (confirm("You are about to log out. Continue?") === true) {
       // Clear local storage of any credentials/auth bundles
       window.localStorage.removeItem("AUTH_BUNDLE");
+      if (setShouldClearIframe) {
+        setShouldClearIframe(true);
+      }
 
       const res = await axios.post(logoutUrl(), {}, { withCredentials: true });
       if (res.status !== 204) {

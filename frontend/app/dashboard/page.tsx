@@ -7,8 +7,6 @@ import Image from "next/image";
 import { useAuth } from "@/components/context/auth.context";
 import {
   constructTxUrl,
-  getSubOrganizationUrl,
-  turnkeyWhoami,
   getWalletUrl,
   sendTxUrl,
   broadcastTxUrl,
@@ -27,6 +25,7 @@ import { Modal } from "@/components/Modal";
 import { ExportWallet } from "@/components/ExportWallet";
 import { TurnkeyClient } from "@turnkey/http";
 import { EmailAuth } from "@/components/EmailAuth";
+import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from "@/utils/localStorage";
 
 type resource = {
   data: any;
@@ -56,8 +55,9 @@ export default function Dashboard() {
   const [disabledSend, setDisabledSend] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [shouldClearIframe, setShouldClearIframe] = useState(false);
 
-  // add an iframestamper in the case we have email auth!
+  // Add an iframestamper in the case we have email auth!
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
@@ -72,7 +72,6 @@ export default function Dashboard() {
     { refreshInterval: 5000 }
   );
 
-  // potentially add logic here that recognizes iframestamper creds
   useEffect(() => {
     if (state.isLoaded === true && state.isLoggedIn === false) {
       // Redirect the user to auth if not logged in
@@ -113,9 +112,8 @@ export default function Dashboard() {
   }
 
   async function injectCredentialBundle(iframeStamper: IframeStamper) {
-    const bundle = localStorage.getItem("AUTH_BUNDLE") ?? "";
-    const parsedBundle = JSON.parse(bundle);
-    await iframeStamper.injectCredentialBundle(parsedBundle.value);
+    const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
+    await iframeStamper.injectCredentialBundle(bundle);
   }
 
   async function broadcastTransaction(signedTransaction: string) {
@@ -213,16 +211,17 @@ export default function Dashboard() {
     return;
   }
 
+  // When a user attempts a send, we will first check if they are logged in with email auth
+  // (if the credential is valid via whoami check). Else, use passkey.
   async function sendFormHandler(data: sendFormData) {
     setDisabledSend(true);
     try {
       const txData = await constructTransaction(data);
 
-      if (iframeStamper !== null && localStorage.getItem("AUTH_BUNDLE")) {
+      if (iframeStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
         try {
           await tryIframeStamperSend(iframeStamper, txData);
         } catch (e) {
-          // log, then try webauthn case...
           alert(
             "Unable to send via email credentials. Proceed to use passkey!"
           );
@@ -269,7 +268,7 @@ export default function Dashboard() {
           </div>
 
           <div className="col-span-1">
-            <AuthWidget></AuthWidget>
+            <AuthWidget setShouldClearIframe={setShouldClearIframe}></AuthWidget>
           </div>
         </div>
 
@@ -445,6 +444,7 @@ export default function Dashboard() {
       </div>
 
       <EmailAuth
+        shouldClear={shouldClearIframe}
         setIframeStamper={setIframeStamper}
         iframeUrl={process.env.NEXT_PUBLIC_AUTH_IFRAME_URL!}
       ></EmailAuth>
