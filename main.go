@@ -25,7 +25,6 @@ import (
 	"github.com/tkhq/demo-passkey-wallet/internal/models"
 	"github.com/tkhq/demo-passkey-wallet/internal/turnkey"
 	"github.com/tkhq/demo-passkey-wallet/internal/types"
-	"google.golang.org/grpc/status"
 )
 
 const SESSION_NAME = "demo_session"
@@ -425,8 +424,6 @@ func main() {
 			return
 		}
 
-		fmt.Printf("PARAMS: %v\n", params)
-
 		user := getCurrentUser(ctx)
 		if user == nil {
 			ctx.String(http.StatusForbidden, "no current user")
@@ -546,8 +543,6 @@ func main() {
 			return
 		}
 
-		fmt.Printf("PARAMS: %v\n", params)
-
 		user, err := models.FindUserByEmail(params.Email)
 		if err != nil {
 			ctx.String(http.StatusForbidden, "no user found")
@@ -555,17 +550,10 @@ func main() {
 		}
 		subOrganizationId := user.SubOrganizationId.String
 
-		fmt.Printf("USER: %v\n", user)
-
 		turnkeyUserUuid, turnkeyUserApiKeyId, err := turnkey.Client.EmailAuth(subOrganizationId, user.Email, params.TargetPublicKey)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, fmt.Sprintf("error while performing email auth: %s", err.Error()))
 
-			fmt.Printf("FULL ERROR: %v\n", err)
-
-			st, _ := status.FromError(err)
-			fmt.Printf("STATUS: %v\n", st)
-			fmt.Printf("DETAILS: %v\n", st.Details())
 			return
 		}
 
