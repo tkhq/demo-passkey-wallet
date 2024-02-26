@@ -7,11 +7,12 @@ import Image from "next/image";
 import { useAuth } from "@/components/context/auth.context";
 import {
   constructTxUrl,
-  getSubOrganizationUrl,
   getWalletUrl,
   sendTxUrl,
+  broadcastTxUrl,
 } from "@/utils/urls";
 import { WebauthnStamper } from "@turnkey/webauthn-stamper";
+import { IframeStamper } from "@turnkey/iframe-stamper";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,8 @@ import { History } from "@/components/History";
 import { Modal } from "@/components/Modal";
 import { ExportWallet } from "@/components/ExportWallet";
 import { TurnkeyClient } from "@turnkey/http";
+import { EmailAuth } from "@/components/EmailAuth";
+import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from "@/utils/localStorage";
 
 type resource = {
   data: any;
@@ -52,6 +55,12 @@ export default function Dashboard() {
   const [disabledSend, setDisabledSend] = useState(false);
   const [txHash, setTxHash] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [shouldClearIframe, setShouldClearIframe] = useState(false);
+
+  // Add an iframestamper in the case we have email auth!
+  const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
+    null
+  );
 
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } =
@@ -79,67 +88,148 @@ export default function Dashboard() {
     }
   }, [key, setDisabledSend]);
 
+  async function constructTransaction(data: sendFormData) {
+    const constructRes = await axios.post(
+      constructTxUrl(),
+      {
+        amount: data.amount,
+        destination: data.destination,
+      },
+      { withCredentials: true }
+    );
+
+    if (constructRes.status !== 200) {
+      throw new Error(
+        `Unexpected response from tx construction endpoint: ${constructRes.status}: ${constructRes.data}`
+      );
+    }
+
+    console.log(
+      "Successfully constructed tx: ",
+      constructRes.data["unsignedTransaction"]
+    );
+    return constructRes.data;
+  }
+
+  async function injectCredentialBundle(iframeStamper: IframeStamper) {
+    const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
+    await iframeStamper.injectCredentialBundle(bundle);
+  }
+
+  async function broadcastTransaction(signedTransaction: string) {
+    const broadcastTxRes = await axios.post(
+      broadcastTxUrl(),
+      {
+        signedSendTx: signedTransaction,
+      },
+      { withCredentials: true }
+    );
+
+    if (broadcastTxRes.status !== 200) {
+      throw new Error(
+        `Unexpected response when submitting signed transaction: ${broadcastTxRes.status}: ${broadcastTxRes.data}`
+      );
+    }
+
+    console.log("Successfully sent! Hash", broadcastTxRes.data["hash"]);
+    setTxHash(broadcastTxRes.data["hash"]);
+  }
+
+  async function tryIframeStamperSend(iframeStamper: IframeStamper, data: any) {
+    await injectCredentialBundle(iframeStamper);
+    const client = new TurnkeyClient(
+      {
+        baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+      },
+      iframeStamper
+    );
+
+    // Will throw an error if credentials are invalid
+    const _whoamiRes = await client.getWhoami({
+      organizationId: data["organizationId"],
+    });
+
+    const signTxRes = await client.signTransaction({
+      type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
+      organizationId: data["organizationId"],
+      timestampMs: Date.now().toString(),
+      parameters: {
+        signWith: data["address"],
+        unsignedTransaction: data["unsignedTransaction"],
+        type: "TRANSACTION_TYPE_ETHEREUM",
+      },
+    });
+
+    if (signTxRes.activity.status !== "ACTIVITY_STATUS_COMPLETED") {
+      throw new Error(`Activity unsuccessful: ${signTxRes.activity.status}`);
+    }
+
+    await broadcastTransaction(
+      signTxRes.activity.result.signTransactionResult!.signedTransaction
+    );
+  }
+
+  async function tryWebauthnStamperSend(txData: any, data: sendFormData) {
+    const stamper = new WebauthnStamper({
+      rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
+    });
+    const client = new TurnkeyClient(
+      {
+        baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+      },
+      stamper
+    );
+    const stampedSignTransactionRequest = await client.stampSignTransaction({
+      type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
+      organizationId: txData["organizationId"],
+      timestampMs: Date.now().toString(),
+      parameters: {
+        signWith: txData["address"],
+        unsignedTransaction: txData["unsignedTransaction"],
+        type: "TRANSACTION_TYPE_ETHEREUM",
+      },
+    });
+
+    const sendRes = await axios.post(
+      sendTxUrl(),
+      {
+        signedSendTx: stampedSignTransactionRequest,
+        destination: data.destination,
+      },
+      { withCredentials: true }
+    );
+
+    if (sendRes.status === 200) {
+      console.log("Successfully sent! Hash", sendRes.data["hash"]);
+      setTxHash(sendRes.data["hash"]);
+    } else {
+      throw new Error(
+        `Unexpected response when submitting signed transaction: ${sendRes.status}: ${sendRes.data}`
+      );
+    }
+
+    return;
+  }
+
+  // When a user attempts a send, we will first check if they are logged in with email auth
+  // (if the credential is valid via whoami check). Else, use passkey.
   async function sendFormHandler(data: sendFormData) {
     setDisabledSend(true);
     try {
-      const constructRes = await axios.post(
-        constructTxUrl(),
-        {
-          amount: data.amount,
-          destination: data.destination,
-        },
-        { withCredentials: true }
-      );
+      const txData = await constructTransaction(data);
 
-      if (constructRes.status === 200) {
-        console.log(
-          "Successfully constructed tx: ",
-          constructRes.data["unsignedTransaction"]
-        );
+      if (iframeStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
+        try {
+          await tryIframeStamperSend(iframeStamper, txData);
+        } catch (e) {
+          alert(
+            "Unable to send via email credentials. Proceed to use passkey!"
+          );
+          console.error("Error while trying to sign use iframestamper", e);
+          await tryWebauthnStamperSend(txData, data);
+        }
       } else {
-        throw new Error(
-          `Unexpected response from tx construction endpoint: ${constructRes.status}: ${constructRes.data}`
-        );
-      }
-
-      const stamper = new WebauthnStamper({
-        rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
-      });
-      const client = new TurnkeyClient(
-        {
-          baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-        },
-        stamper
-      );
-
-      // Now let's sign this!
-      const signedTransaction = await client.stampSignTransaction({
-        type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
-        organizationId: constructRes.data["organizationId"],
-        timestampMs: Date.now().toString(),
-        parameters: {
-          signWith: constructRes.data["address"],
-          unsignedTransaction: constructRes.data["unsignedTransaction"],
-          type: "TRANSACTION_TYPE_ETHEREUM",
-        },
-      });
-
-      const sendRes = await axios.post(
-        sendTxUrl(),
-        {
-          signedSendTx: signedTransaction,
-          destination: data.destination,
-        },
-        { withCredentials: true }
-      );
-
-      if (sendRes.status === 200) {
-        console.log("Successfully sent! Hash", sendRes.data["hash"]);
-        setTxHash(sendRes.data["hash"]);
-      } else {
-        throw new Error(
-          `Unexpected response when submitting signed transaction: ${sendRes.status}: ${sendRes.data}`
-        );
+        await tryWebauthnStamperSend(txData, data);
       }
     } catch (e: any) {
       const msg = `Caught error: ${e.toString()}`;
@@ -178,7 +268,7 @@ export default function Dashboard() {
           </div>
 
           <div className="col-span-1">
-            <AuthWidget></AuthWidget>
+            <AuthWidget setShouldClearIframe={setShouldClearIframe}></AuthWidget>
           </div>
         </div>
 
@@ -352,6 +442,12 @@ export default function Dashboard() {
 
         <Footer></Footer>
       </div>
+
+      <EmailAuth
+        shouldClear={shouldClearIframe}
+        setIframeStamper={setIframeStamper}
+        iframeUrl={process.env.NEXT_PUBLIC_AUTH_IFRAME_URL!}
+      ></EmailAuth>
     </div>
   );
 }

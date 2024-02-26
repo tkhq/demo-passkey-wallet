@@ -15,6 +15,7 @@ type Attestation struct {
 
 type AuthenticationRequest struct {
 	SignedWhoamiRequest SignedTurnkeyRequest
+	SubOrganizationId   string // optional; for email auth
 }
 
 type ConstructTxParams struct {
@@ -24,6 +25,10 @@ type ConstructTxParams struct {
 
 type SendTxParams struct {
 	SignedSendTx SignedTurnkeyRequest `json:"signedSendTx" binding:"required"`
+}
+
+type BroadcastTxParams struct {
+	SignedSendTx string `json:"signedSendTx" binding:"required"`
 }
 
 type SignedTurnkeyRequest struct {
@@ -48,4 +53,13 @@ type RecoveryParams struct {
 
 type RecoverRequest struct {
 	SignedRecoverRequest SignedTurnkeyRequest `json:"signedRecoverRequest" binding:"required"`
+}
+
+type WhoamiRequest struct {
+	SignedWhoamiRequest SignedTurnkeyRequest `json:"signedWhoamiRequest" binding:"required"`
+}
+
+type EmailAuthParams struct {
+	Email           string `json:"email" binding:"required"`
+	TargetPublicKey string `json:"targetPublicKey" binding:"required"`
 }
