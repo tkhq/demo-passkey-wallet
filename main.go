@@ -322,11 +322,13 @@ func main() {
 		txHash, err := ethereum.BroadcastTransaction(signedDropTx)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to broadcast drop transfer").Error())
+			return
 		}
 
 		err = models.RecordDropForWallet(wallet)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to persist drop in DB").Error())
+			return
 		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
@@ -410,31 +412,6 @@ func main() {
 		hash, err := ethereum.BroadcastTransaction(signedTransaction)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", signedTransaction))
-			return
-		}
-
-		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"hash": hash,
-		})
-	})
-
-	router.POST("/api/wallet/broadcast-tx", func(ctx *gin.Context) {
-		var params types.BroadcastTxParams
-		err := ctx.BindJSON(&params)
-		if err != nil {
-			ctx.String(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		user := getCurrentUser(ctx)
-		if user == nil {
-			ctx.String(http.StatusForbidden, "no current user")
-			return
-		}
-
-		hash, err := ethereum.BroadcastTransaction(params.SignedSendTx)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", params.SignedSendTx))
 			return
 		}
 

@@ -1,6 +1,7 @@
 "use client";
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { getItemWithExpiry, TURNKEY_BUNDLE_KEY } from "@/utils/localStorage";
 
 interface EmailAuthProps {
   shouldClear: boolean;
@@ -10,6 +11,11 @@ interface EmailAuthProps {
 
 const TurnkeyIframeContainerId = "turnkey-auth-iframe-container-id";
 const TurnkeyIframeElementId = "turnkey-auth-iframe-element-id";
+
+async function injectCredentialBundle(iframeStamper: IframeStamper) {
+  const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
+  await iframeStamper.injectCredentialBundle(bundle);
+}
 
 export function EmailAuth(props: EmailAuthProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(

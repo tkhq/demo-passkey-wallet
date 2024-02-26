@@ -107,12 +107,10 @@ export default function EmailAuthPage() {
       throw new Error("emailAuthUserInfo is null");
     }
 
-    // TODO: do something with the bundle, and/or the iframestamper.
-    // set the bundle in local storage?
     try {
       await iframeStamper.injectCredentialBundle(data.bundle);
 
-      // Note: this comes with associated risk.
+      // Note: this comes with associated risk. Make sure this auth bundle and the iframestamper's embedded keys are not both easily accessible.
       setItemWithExpiry(
         "AUTH_BUNDLE",
         data.bundle,
