@@ -182,8 +182,8 @@ export default function Auth() {
           displayName: email,
         },
         authenticatorSelection: {
-          requireResidentKey: true,
-          residentKey: "required",
+          requireResidentKey: false,
+          residentKey: "preferred",
           userVerification: "preferred",
         },
       },
