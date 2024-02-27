@@ -23,7 +23,7 @@ import { History } from "@/components/History";
 import { Modal } from "@/components/Modal";
 import { ExportWallet } from "@/components/ExportWallet";
 import { TurnkeyClient } from "@turnkey/http";
-import { EmailAuth } from "@/components/EmailAuth";
+import { EmailAuth, checkIsValid, injectCredentialBundle } from "@/components/EmailAuth";
 import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from "@/utils/localStorage";
 
 type Stamper = IframeStamper | WebauthnStamper;
@@ -112,11 +112,6 @@ export default function Dashboard() {
     return constructRes.data;
   }
 
-  async function injectCredentialBundle(iframeStamper: IframeStamper) {
-    const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
-    await iframeStamper.injectCredentialBundle(bundle);
-  }
-
   async function sendTransaction(stamper: Stamper, txData: any, data: sendFormData) {
     const client = new TurnkeyClient(
       {
@@ -159,9 +154,10 @@ export default function Dashboard() {
 
   // Attempt to use an Email Auth Stamper (an Iframestamper under the hood) if available. Otherwise, default to 
   // a passkey stamper (aka Webauthnstamper)
-  async function getCurrentStamper() : Promise<Stamper> {
+  async function getCurrentStamper(organizationId: string) : Promise<Stamper> {
     if (emailAuthStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
       await injectCredentialBundle(emailAuthStamper);
+      await checkIsValid(emailAuthStamper, organizationId);
 
       return emailAuthStamper;
     }
@@ -177,7 +173,7 @@ export default function Dashboard() {
     setDisabledSend(true);
     try {
       const constructedTx = await constructTransaction(formData);
-      const stamper = await getCurrentStamper();
+      const stamper = await getCurrentStamper(constructedTx["organizationId"]);
       await sendTransaction(stamper, constructedTx, formData);
     } catch (e: any) {
       const msg = `Caught error: ${e.toString()}`;

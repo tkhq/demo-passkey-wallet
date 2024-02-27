@@ -1,23 +1,22 @@
 "use client";
 
 import Image from "next/image";
-import { TurnkeyClient, getWebAuthnAttestation } from "@turnkey/http";
+import { TurnkeyClient } from "@turnkey/http";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useSWRConfig } from "swr";
 import {
   authenticateUrl,
   emailAuthUrl,
-  turnkeyWhoami,
   whoamiUrl,
-} from "../../utils/urls";
+} from "@/utils/urls";
 import { setItemWithExpiry, TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS } from "@/utils/localStorage";
 import { useAuth } from "@/components/context/auth.context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IframeStamper } from "@turnkey/iframe-stamper";
-import { EmailAuth } from "@/components/EmailAuth";
+import { EmailAuth, checkIsValid } from "@/components/EmailAuth";
 
 type InitEmailAuthFormData = {
   email: string;
@@ -129,25 +128,20 @@ export default function EmailAuthPage() {
       iframeStamper
     );
 
-    // An example request that can be signed using the iframe stamper
-    const signedRequest = await client.stampGetWhoami({
+    const signedWhoami = await client.stampGetWhoami({
       organizationId: emailAuthUserInfo.organizationId,
     });
 
-    const _whoamiRes = await axios.post(turnkeyWhoami(), {
-      signedWhoamiRequest: signedRequest,
-    });
-
-    // OR you can make the request directly
+    // This emailAuthStamper-based client can query the Turnkey API directly
     const whoami = await client.getWhoami({
       organizationId: emailAuthUserInfo.organizationId,
     });
 
-    // save session in backend
+    // Save session in backend
     const res = await axios.post(
       authenticateUrl(),
       {
-        signedWhoamiRequest: signedRequest,
+        signedWhoamiRequest: signedWhoami,
       },
       { withCredentials: true }
     );
