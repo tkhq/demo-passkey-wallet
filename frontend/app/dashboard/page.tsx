@@ -5,11 +5,7 @@ import { Drop } from "@/components/Drop";
 import { Footer } from "@/components/Footer";
 import Image from "next/image";
 import { useAuth } from "@/components/context/auth.context";
-import {
-  constructTxUrl,
-  getWalletUrl,
-  sendTxUrl,
-} from "@/utils/urls";
+import { constructTxUrl, getWalletUrl, sendTxUrl } from "@/utils/urls";
 import { WebauthnStamper } from "@turnkey/webauthn-stamper";
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import axios from "axios";
@@ -23,7 +19,11 @@ import { History } from "@/components/History";
 import { Modal } from "@/components/Modal";
 import { ExportWallet } from "@/components/ExportWallet";
 import { TurnkeyClient } from "@turnkey/http";
-import { EmailAuth, checkIsValid, injectCredentialBundle } from "@/components/EmailAuth";
+import {
+  EmailAuth,
+  checkIsValid,
+  injectCredentialBundle,
+} from "@/components/EmailAuth";
 import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from "@/utils/localStorage";
 
 type Stamper = IframeStamper | WebauthnStamper;
@@ -59,9 +59,8 @@ export default function Dashboard() {
   const [shouldClearIframe, setShouldClearIframe] = useState(false);
 
   // Add an iframestamper in the case we have email auth! Named `emailAuthStamper` for clarity.
-  const [emailAuthStamper, setEmailAuthStamper] = useState<IframeStamper | null>(
-    null
-  );
+  const [emailAuthStamper, setEmailAuthStamper] =
+    useState<IframeStamper | null>(null);
 
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } =
@@ -112,7 +111,11 @@ export default function Dashboard() {
     return constructRes.data;
   }
 
-  async function sendTransaction(stamper: Stamper, txData: any, data: sendFormData) {
+  async function sendTransaction(
+    stamper: Stamper,
+    txData: any,
+    data: sendFormData
+  ) {
     const client = new TurnkeyClient(
       {
         baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
@@ -152,15 +155,25 @@ export default function Dashboard() {
     return;
   }
 
-  // Attempt to use an Email Auth Stamper (an Iframestamper under the hood) if available. Otherwise, default to 
+  // Attempt to use an Email Auth Stamper (an Iframestamper under the hood) if available. Otherwise, default to
   // a passkey stamper (aka Webauthnstamper)
-  async function getCurrentStamper(organizationId: string) : Promise<Stamper> {
+  async function getCurrentStamper(organizationId: string): Promise<Stamper> {
     if (emailAuthStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
-      await injectCredentialBundle(emailAuthStamper);
-      await checkIsValid(emailAuthStamper, organizationId);
+      console.log("Using email auth stamper");
 
-      return emailAuthStamper;
+      try {
+        await injectCredentialBundle(emailAuthStamper);
+        await checkIsValid(emailAuthStamper, organizationId);
+
+        return emailAuthStamper;
+      } catch (e: any) {
+        const message = `Caught an error: ${e.toString()}. Email Auth key may be expired.`;
+
+        console.error(message);
+      }
     }
+
+    console.log("Using passkey stamper");
 
     return new WebauthnStamper({
       rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
@@ -212,7 +225,9 @@ export default function Dashboard() {
           </div>
 
           <div className="col-span-1">
-            <AuthWidget setShouldClearIframe={setShouldClearIframe}></AuthWidget>
+            <AuthWidget
+              setShouldClearIframe={setShouldClearIframe}
+            ></AuthWidget>
           </div>
         </div>
 

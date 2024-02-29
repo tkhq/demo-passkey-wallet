@@ -5,6 +5,7 @@ import axios from "axios";
 import { logoutUrl, whoamiUrl } from "@/utils/urls";
 import { useSWRConfig } from "swr";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { TURNKEY_BUNDLE_KEY } from "@/utils/localStorage";
 
 interface AuthWidgetProps {
   setShouldClearIframe?: Dispatch<SetStateAction<boolean>>;
@@ -20,7 +21,7 @@ export function AuthWidget(props: AuthWidgetProps) {
   const handleLogout = async () => {
     if (confirm("You are about to log out. Continue?") === true) {
       // Clear local storage of any credentials/auth bundles
-      window.localStorage.removeItem("AUTH_BUNDLE");
+      window.localStorage.removeItem(TURNKEY_BUNDLE_KEY);
       if (setShouldClearIframe) {
         setShouldClearIframe(true);
       }
@@ -38,7 +39,7 @@ export function AuthWidget(props: AuthWidgetProps) {
     }
 
     // Confirm clearance of local storage
-    window.localStorage.removeItem("AUTH_BUNDLE");
+    window.localStorage.removeItem(TURNKEY_BUNDLE_KEY);
   };
 
   if (state.isLoaded) {

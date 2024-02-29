@@ -5,12 +5,12 @@ import { TurnkeyClient } from "@turnkey/http";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { useSWRConfig } from "swr";
+import { authenticateUrl, emailAuthUrl, whoamiUrl } from "@/utils/urls";
 import {
-  authenticateUrl,
-  emailAuthUrl,
-  whoamiUrl,
-} from "@/utils/urls";
-import { setItemWithExpiry, TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS } from "@/utils/localStorage";
+  setItemWithExpiry,
+  TURNKEY_BUNDLE_KEY,
+  TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS,
+} from "@/utils/localStorage";
 import { useAuth } from "@/components/context/auth.context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -111,7 +111,7 @@ export default function EmailAuthPage() {
 
       // Note: this comes with associated risk. Make sure this auth bundle and the iframestamper's embedded keys are not both easily accessible.
       setItemWithExpiry(
-        "AUTH_BUNDLE",
+        TURNKEY_BUNDLE_KEY,
         data.bundle,
         TURNKEY_EMBEDDED_KEY_TTL_IN_MILLIS
       );

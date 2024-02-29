@@ -11,6 +11,7 @@ import {
 } from "react";
 import { whoamiUrl } from "@/utils/urls";
 import useSWR from "swr";
+import { TURNKEY_BUNDLE_KEY } from "@/utils/localStorage";
 
 type AuthState = {
   isLoaded: boolean;
@@ -74,6 +75,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (data !== undefined) {
       setState(data);
+
+      if (!data.isLoggedIn) {
+        // If user is not logged in, we want to make sure localStorage is clear of any auth bundle
+        window.localStorage.removeItem(TURNKEY_BUNDLE_KEY);
+      }
     }
   }, [data]);
 
