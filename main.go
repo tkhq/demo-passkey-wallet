@@ -66,10 +66,12 @@ func main() {
 		log.Fatal("$PORT must be set")
 	}
 
-	clientOrigin := os.Getenv("CLIENT_ORIGIN")
-	if clientOrigin == "" {
-		log.Fatal("$CLIENT_ORIGIN must be set")
+	// Note: primary origin should come first (e.g. wallet.tx.xyz)
+	clientOrigins := os.Getenv("CLIENT_ORIGINS")
+	if clientOrigins == "" {
+		log.Fatal("$CLIENT_ORIGINS must be set")
 	}
+	origins := strings.Split(clientOrigins, ",")
 
 	router := gin.New()
 	router.Use(gin.Recovery())
@@ -78,7 +80,7 @@ func main() {
 	router.Use(ginErrorLogMiddleware)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{clientOrigin},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST"},
 		AllowHeaders:     []string{"content-type"},
 		AllowCredentials: true,
@@ -116,7 +118,7 @@ func main() {
 	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
 	router.GET("/", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, fmt.Sprintf("This is the Demo Passkey Wallet backend. Welcome I guess? Head to %s if you're lost.", clientOrigin))
+		ctx.String(http.StatusOK, fmt.Sprintf("This is the Demo Passkey Wallet backend. Welcome I guess? Head to %s if you're lost.", origins[0]))
 	})
 
 	router.GET("/api/whoami", func(ctx *gin.Context) {
@@ -320,11 +322,13 @@ func main() {
 		txHash, err := ethereum.BroadcastTransaction(signedDropTx)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to broadcast drop transfer").Error())
+			return
 		}
 
 		err = models.RecordDropForWallet(wallet)
 		if err != nil {
 			ctx.String(http.StatusInternalServerError, errors.Wrap(err, "unable to persist drop in DB").Error())
+			return
 		}
 
 		ctx.JSON(http.StatusOK, map[string]interface{}{
@@ -408,31 +412,6 @@ func main() {
 		hash, err := ethereum.BroadcastTransaction(signedTransaction)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", signedTransaction))
-			return
-		}
-
-		ctx.JSON(http.StatusOK, map[string]interface{}{
-			"hash": hash,
-		})
-	})
-
-	router.POST("/api/wallet/broadcast-tx", func(ctx *gin.Context) {
-		var params types.BroadcastTxParams
-		err := ctx.BindJSON(&params)
-		if err != nil {
-			ctx.String(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		user := getCurrentUser(ctx)
-		if user == nil {
-			ctx.String(http.StatusForbidden, "no current user")
-			return
-		}
-
-		hash, err := ethereum.BroadcastTransaction(params.SignedSendTx)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error while broadcasting signed transaction %q", params.SignedSendTx))
 			return
 		}
 

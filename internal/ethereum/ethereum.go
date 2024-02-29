@@ -62,6 +62,11 @@ func ConstructTransfer(from string, to string, amount *big.Int, nonce *uint64) (
 	multipliedGasPrice := new(big.Int).Mul(gasPrice, big.NewInt(2))
 	multipliedGasTip := new(big.Int).Mul(gasTipCap, big.NewInt(2))
 
+	// Ensure gas price >= gas tip
+	if multipliedGasTip.Cmp(multipliedGasPrice) == 1 {
+		multipliedGasPrice = multipliedGasTip
+	}
+
 	var suggestedNonce uint64
 	if nonce != nil {
 		suggestedNonce = *nonce

@@ -5,12 +5,7 @@ import { Drop } from "@/components/Drop";
 import { Footer } from "@/components/Footer";
 import Image from "next/image";
 import { useAuth } from "@/components/context/auth.context";
-import {
-  constructTxUrl,
-  getWalletUrl,
-  sendTxUrl,
-  broadcastTxUrl,
-} from "@/utils/urls";
+import { constructTxUrl, getWalletUrl, sendTxUrl } from "@/utils/urls";
 import { WebauthnStamper } from "@turnkey/webauthn-stamper";
 import { IframeStamper } from "@turnkey/iframe-stamper";
 import axios from "axios";
@@ -24,8 +19,14 @@ import { History } from "@/components/History";
 import { Modal } from "@/components/Modal";
 import { ExportWallet } from "@/components/ExportWallet";
 import { TurnkeyClient } from "@turnkey/http";
-import { EmailAuth } from "@/components/EmailAuth";
+import {
+  EmailAuth,
+  checkIsValid,
+  injectCredentialBundle,
+} from "@/components/EmailAuth";
 import { TURNKEY_BUNDLE_KEY, getItemWithExpiry } from "@/utils/localStorage";
+
+type Stamper = IframeStamper | WebauthnStamper;
 
 type resource = {
   data: any;
@@ -57,10 +58,9 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [shouldClearIframe, setShouldClearIframe] = useState(false);
 
-  // Add an iframestamper in the case we have email auth!
-  const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
-    null
-  );
+  // Add an iframestamper in the case we have email auth! Named `emailAuthStamper` for clarity.
+  const [emailAuthStamper, setEmailAuthStamper] =
+    useState<IframeStamper | null>(null);
 
   const router = useRouter();
   const { register: sendFormRegister, handleSubmit: sendFormSubmit } =
@@ -111,74 +111,18 @@ export default function Dashboard() {
     return constructRes.data;
   }
 
-  async function injectCredentialBundle(iframeStamper: IframeStamper) {
-    const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
-    await iframeStamper.injectCredentialBundle(bundle);
-  }
-
-  async function broadcastTransaction(signedTransaction: string) {
-    const broadcastTxRes = await axios.post(
-      broadcastTxUrl(),
-      {
-        signedSendTx: signedTransaction,
-      },
-      { withCredentials: true }
-    );
-
-    if (broadcastTxRes.status !== 200) {
-      throw new Error(
-        `Unexpected response when submitting signed transaction: ${broadcastTxRes.status}: ${broadcastTxRes.data}`
-      );
-    }
-
-    console.log("Successfully sent! Hash", broadcastTxRes.data["hash"]);
-    setTxHash(broadcastTxRes.data["hash"]);
-  }
-
-  async function tryIframeStamperSend(iframeStamper: IframeStamper, data: any) {
-    await injectCredentialBundle(iframeStamper);
-    const client = new TurnkeyClient(
-      {
-        baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
-      },
-      iframeStamper
-    );
-
-    // Will throw an error if credentials are invalid
-    const _whoamiRes = await client.getWhoami({
-      organizationId: data["organizationId"],
-    });
-
-    const signTxRes = await client.signTransaction({
-      type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
-      organizationId: data["organizationId"],
-      timestampMs: Date.now().toString(),
-      parameters: {
-        signWith: data["address"],
-        unsignedTransaction: data["unsignedTransaction"],
-        type: "TRANSACTION_TYPE_ETHEREUM",
-      },
-    });
-
-    if (signTxRes.activity.status !== "ACTIVITY_STATUS_COMPLETED") {
-      throw new Error(`Activity unsuccessful: ${signTxRes.activity.status}`);
-    }
-
-    await broadcastTransaction(
-      signTxRes.activity.result.signTransactionResult!.signedTransaction
-    );
-  }
-
-  async function tryWebauthnStamperSend(txData: any, data: sendFormData) {
-    const stamper = new WebauthnStamper({
-      rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
-    });
+  async function sendTransaction(
+    stamper: Stamper,
+    txData: any,
+    data: sendFormData
+  ) {
     const client = new TurnkeyClient(
       {
         baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
       },
       stamper
     );
+
     const stampedSignTransactionRequest = await client.stampSignTransaction({
       type: "ACTIVITY_TYPE_SIGN_TRANSACTION_V2",
       organizationId: txData["organizationId"],
@@ -211,26 +155,39 @@ export default function Dashboard() {
     return;
   }
 
+  // Attempt to use an Email Auth Stamper (an Iframestamper under the hood) if available. Otherwise, default to
+  // a passkey stamper (aka Webauthnstamper)
+  async function getCurrentStamper(organizationId: string): Promise<Stamper> {
+    if (emailAuthStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
+      console.log("Using email auth stamper");
+
+      try {
+        await injectCredentialBundle(emailAuthStamper);
+        await checkIsValid(emailAuthStamper, organizationId);
+
+        return emailAuthStamper;
+      } catch (e: any) {
+        const message = `Caught an error: ${e.toString()}. Email Auth key may be expired.`;
+
+        console.error(message);
+      }
+    }
+
+    console.log("Using passkey stamper");
+
+    return new WebauthnStamper({
+      rpId: process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!,
+    });
+  }
+
   // When a user attempts a send, we will first check if they are logged in with email auth
   // (if the credential is valid via whoami check). Else, use passkey.
-  async function sendFormHandler(data: sendFormData) {
+  async function sendFormHandler(formData: sendFormData) {
     setDisabledSend(true);
     try {
-      const txData = await constructTransaction(data);
-
-      if (iframeStamper !== null && getItemWithExpiry(TURNKEY_BUNDLE_KEY)) {
-        try {
-          await tryIframeStamperSend(iframeStamper, txData);
-        } catch (e) {
-          alert(
-            "Unable to send via email credentials. Proceed to use passkey!"
-          );
-          console.error("Error while trying to sign use iframestamper", e);
-          await tryWebauthnStamperSend(txData, data);
-        }
-      } else {
-        await tryWebauthnStamperSend(txData, data);
-      }
+      const constructedTx = await constructTransaction(formData);
+      const stamper = await getCurrentStamper(constructedTx["organizationId"]);
+      await sendTransaction(stamper, constructedTx, formData);
     } catch (e: any) {
       const msg = `Caught error: ${e.toString()}`;
       console.error(msg);
@@ -268,7 +225,9 @@ export default function Dashboard() {
           </div>
 
           <div className="col-span-1">
-            <AuthWidget setShouldClearIframe={setShouldClearIframe}></AuthWidget>
+            <AuthWidget
+              setShouldClearIframe={setShouldClearIframe}
+            ></AuthWidget>
           </div>
         </div>
 
@@ -445,7 +404,7 @@ export default function Dashboard() {
 
       <EmailAuth
         shouldClear={shouldClearIframe}
-        setIframeStamper={setIframeStamper}
+        setIframeStamper={setEmailAuthStamper}
         iframeUrl={process.env.NEXT_PUBLIC_AUTH_IFRAME_URL!}
       ></EmailAuth>
     </div>

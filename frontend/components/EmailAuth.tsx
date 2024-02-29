@@ -1,6 +1,10 @@
 "use client";
-import { IframeStamper } from "@turnkey/iframe-stamper";
+import axios from "axios";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { TurnkeyClient } from "@turnkey/http";
+import { IframeStamper } from "@turnkey/iframe-stamper";
+import { getItemWithExpiry, TURNKEY_BUNDLE_KEY } from "@/utils/localStorage";
+import { turnkeyWhoami } from "@/utils/urls";
 
 interface EmailAuthProps {
   shouldClear: boolean;
@@ -11,11 +15,38 @@ interface EmailAuthProps {
 const TurnkeyIframeContainerId = "turnkey-auth-iframe-container-id";
 const TurnkeyIframeElementId = "turnkey-auth-iframe-element-id";
 
+export async function checkIsValid(iframeStamper: IframeStamper, organizationId: string) {
+  const client = new TurnkeyClient(
+    {
+      baseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+    },
+    iframeStamper
+  );
+
+  const signedRequest = await client.stampGetWhoami({
+    organizationId,
+  });
+
+  // Will throw an error if the credentials are now invalid
+  const _whoamiRes = await axios.post(turnkeyWhoami(), {
+    signedWhoamiRequest: signedRequest,
+  });
+}
+
+export async function injectCredentialBundle(iframeStamper: IframeStamper) {
+  const bundle = getItemWithExpiry(TURNKEY_BUNDLE_KEY);
+  await iframeStamper.injectCredentialBundle(bundle);
+}
+
 export function EmailAuth(props: EmailAuthProps) {
   const [iframeStamper, setIframeStamper] = useState<IframeStamper | null>(
     null
   );
-  const { shouldClear, iframeUrl, setIframeStamper: setParentIframeStamper } = props;
+  const {
+    shouldClear,
+    iframeUrl,
+    setIframeStamper: setParentIframeStamper,
+  } = props;
   const [iframeDisplay, setIframeDisplay] = useState("none");
 
   useEffect(() => {
@@ -41,7 +72,13 @@ export function EmailAuth(props: EmailAuthProps) {
         setParentIframeStamper(null);
       }
     };
-  }, [shouldClear, iframeUrl, iframeStamper, setIframeStamper, setParentIframeStamper]);
+  }, [
+    shouldClear,
+    iframeUrl,
+    iframeStamper,
+    setIframeStamper,
+    setParentIframeStamper,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
