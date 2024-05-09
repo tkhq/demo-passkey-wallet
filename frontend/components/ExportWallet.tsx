@@ -83,7 +83,7 @@ export function ExportWallet(props: ExportWalletProps) {
         setIframeDisplay("block");
       } catch (e: any) {
         throw new Error(
-          "unexpected error while injecting recovery bundle: " + e.toString()
+          "unexpected error while injecting wallet export bundle: " + e.toString()
         );
       }
     }
