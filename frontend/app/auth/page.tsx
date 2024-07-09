@@ -20,6 +20,8 @@ import { WebauthnStamper } from "@turnkey/webauthn-stamper";
 const DEMO_PASSKEY_WALLET_RPID =
   process.env.NEXT_PUBLIC_DEMO_PASSKEY_WALLET_RPID!;
 
+console.log("RPID", DEMO_PASSKEY_WALLET_RPID);
+
 type authenticationFormData = {
   email: string;
 };
@@ -291,7 +293,10 @@ export default function Auth() {
             </button>
           </div>
         </div>
-        <Link className="block w-full text-center mt-6" href={"/"}>
+        <Link
+          className="block w-full text-center mt-6"
+          href={"/"}
+        >
           Go back home
         </Link>
       </div>
