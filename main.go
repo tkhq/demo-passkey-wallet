@@ -52,7 +52,7 @@ func ginErrorLogMiddleware(c *gin.Context) {
 	if statusCode >= 500 {
 		//ok this is an request with error, let's make a record for it
 		// now print body (or log in your preferred way)
-		fmt.Printf("Internal error served: %s (status: %d)\n", blw.body.String(), statusCode)
+		log.Printf("Internal error served: %s (status: %d)\n", blw.body.String(), statusCode)
 	}
 }
 
@@ -115,7 +115,7 @@ func main() {
 		log.Fatalf("Unable to get Turnkey Warchest address: %s", err.Error())
 	}
 
-	fmt.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
+	log.Printf("Initialized Turnkey client successfully. Turnkey API User UUID: %s\n", userID)
 
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, fmt.Sprintf("This is the Demo Passkey Wallet backend. Welcome I guess? Head to %s if you're lost.", origins[0]))
@@ -216,7 +216,7 @@ func main() {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		fmt.Printf("Wallet account successfully saved: %v", pk)
+		log.Printf("Wallet account successfully saved: %v", pk)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Account successfully created")
@@ -229,7 +229,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Current request: %v\n", req)
+		log.Printf("Current request: %v\n", req)
 
 		var subOrganizationId string
 
@@ -251,7 +251,7 @@ func main() {
 			subOrganizationId = gjson.Get(string(bodyBytes), "organizationId").String()
 		}
 
-		fmt.Printf("Suborganization ID: %v\n", subOrganizationId)
+		log.Printf("Suborganization ID: %v\n", subOrganizationId)
 
 		user, err := models.FindUserBySubOrganizationId(subOrganizationId)
 		if err != nil {
@@ -259,7 +259,7 @@ func main() {
 			return
 		}
 
-		fmt.Printf("Current user: %v\n", user)
+		log.Printf("Current user: %v\n", user)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Successful login")
@@ -565,7 +565,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 	// Session.Get returns nil if the session doesn't have a given key
 	userIdOrNil := session.Get(SESSION_USER_ID_KEY)
 	if userIdOrNil == nil {
-		fmt.Println("session.Get returned nil; no session provided?")
+		log.Println("session.Get returned nil; no session provided?")
 		return nil
 	}
 
@@ -579,7 +579,7 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 }
 
 func startUserLoginSession(ctx *gin.Context, userId uint) {
-	fmt.Println("Starting user session...")
+	log.Println("Starting user session...")
 
 	session := sessions.Default(ctx)
 
