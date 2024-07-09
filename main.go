@@ -216,7 +216,7 @@ func main() {
 			ctx.JSON(http.StatusInternalServerError, err.Error())
 			return
 		}
-		log.Printf("Wallet account successfully saved: %v", pk)
+		log.Printf("Wallet account successfully saved: %+v", pk)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Account successfully created")
@@ -584,6 +584,10 @@ func startUserLoginSession(ctx *gin.Context, userId uint) {
 	session := sessions.Default(ctx)
 
 	session.Set(SESSION_USER_ID_KEY, userId)
+
+	log.Printf("SESSION_USER_ID_KEY: %v\n", SESSION_USER_ID_KEY)
+	log.Printf("User ID: %v\n", userId)
+
 	err := session.Save()
 	if err != nil {
 		log.Printf("error while saving session for user %d: %+v", userId, err)
