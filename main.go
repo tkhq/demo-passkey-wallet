@@ -229,6 +229,8 @@ func main() {
 			return
 		}
 
+		fmt.Printf("Current request: %v\n", req)
+
 		var subOrganizationId string
 
 		if req.SubOrganizationId != "" {
@@ -249,11 +251,15 @@ func main() {
 			subOrganizationId = gjson.Get(string(bodyBytes), "organizationId").String()
 		}
 
+		fmt.Printf("Suborganization ID: %v\n", subOrganizationId)
+
 		user, err := models.FindUserBySubOrganizationId(subOrganizationId)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Unable to find user for suborg ID %s", subOrganizationId))
 			return
 		}
+
+		fmt.Printf("Current user: %v\n", user)
 
 		startUserLoginSession(ctx, user.ID)
 		ctx.String(http.StatusOK, "Successful login")
@@ -573,6 +579,8 @@ func getCurrentUser(ctx *gin.Context) *models.User {
 }
 
 func startUserLoginSession(ctx *gin.Context, userId uint) {
+	fmt.Println("Starting user session...")
+
 	session := sessions.Default(ctx)
 
 	session.Set(SESSION_USER_ID_KEY, userId)
