@@ -1,5 +1,7 @@
 # Demo Passkey Wallet
 
+> Note: this Demo Passkey Wallet has been deprecated in favor of Turnkey's [Demo Embedded Wallet](https://github.com/tkhq/demo-embedded-wallet)
+
 This repo contains a wallet application **for demonstration purposes only** showing how users can be registered and authenticated with [passkeys](https://www.passkeys.io/). Passkey signatures are used for registration and authentication. The backend component forwards these signatures to [Turnkey](https://turnkey.io).
 
 The Demo Passkey Wallet is currently hosted at [wallet.tx.xyz](https://wallet.tx.xyz). See [legal disclaimer](#legal-disclaimer).
